@@ -3,7 +3,7 @@
  * Plugin Name:       Bubble Cursor — Smokey Fluid Cursor
  * Plugin URI:        https://github.com/zeerebel/bubble_cursor
  * Description:       Adds a colourful WebGL "smoke" fluid trail plus a dot + ring custom cursor with a "View" hover bubble — a replica of the TreeThemes "Deep" theme cursor. Works on any theme (Elementor or not). No coding required.
- * Version:           1.2.1
+ * Version:           1.2.2
  * Requires at least: 5.6
  * Requires PHP:      7.2
  * Author:            zeerebel
@@ -20,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // No direct access.
 }
 
-define( 'BUBBLE_CURSOR_VERSION', '1.2.1' );
+define( 'BUBBLE_CURSOR_VERSION', '1.2.2' );
 define( 'BUBBLE_CURSOR_FILE', __FILE__ );
 define( 'BUBBLE_CURSOR_URL', plugin_dir_url( __FILE__ ) );
 define( 'BUBBLE_CURSOR_PATH', plugin_dir_path( __FILE__ ) );
@@ -79,6 +79,7 @@ final class Bubble_Cursor {
 			// Shape & transparency.
 			'dot_size'              => 8,
 			'ring_size'             => 40,
+			'ring_speed'            => 0.2,
 			'ring_border'           => 1.5,
 			'cursor_opacity'        => 1,
 			'smoke_opacity'         => 1,
@@ -269,6 +270,7 @@ final class Bubble_Cursor {
 				'hoverSelector'    => $o['hover_selector'],
 				'dotSize'          => (float) $o['dot_size'],
 				'ringSize'         => (float) $o['ring_size'],
+				'ringSpeed'        => (float) $o['ring_speed'],
 				'ringBorder'       => (float) $o['ring_border'],
 				'cursorOpacity'    => (float) $o['cursor_opacity'],
 				'smokeOpacity'     => (float) $o['smoke_opacity'],
@@ -367,6 +369,7 @@ final class Bubble_Cursor {
 		// Shape & transparency.
 		$out['dot_size']       = $this->clamp_float( $input, 'dot_size', $d, 2, 40 );
 		$out['ring_size']      = $this->clamp_float( $input, 'ring_size', $d, 10, 120 );
+		$out['ring_speed']     = $this->clamp_float( $input, 'ring_speed', $d, 0.05, 0.6 );
 		$out['ring_border']    = $this->clamp_float( $input, 'ring_border', $d, 0, 8 );
 		$out['cursor_opacity'] = $this->clamp_float( $input, 'cursor_opacity', $d, 0.1, 1 );
 		$out['smoke_opacity']  = $this->clamp_float( $input, 'smoke_opacity', $d, 0.1, 1 );
@@ -512,6 +515,10 @@ final class Bubble_Cursor {
 					<tr>
 						<th scope="row"><?php esc_html_e( 'Ring size', 'bubble-cursor' ); ?></th>
 						<td><input type="number" step="1" min="10" max="120" name="<?php echo esc_attr( $n ); ?>[ring_size]" value="<?php echo esc_attr( $o['ring_size'] ); ?>"> <span class="description"><?php esc_html_e( 'px (default 40)', 'bubble-cursor' ); ?></span></td>
+					</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Ring follow speed', 'bubble-cursor' ); ?></th>
+						<td><input type="number" step="0.01" min="0.05" max="0.6" name="<?php echo esc_attr( $n ); ?>[ring_speed]" value="<?php echo esc_attr( $o['ring_speed'] ); ?>"> <span class="description"><?php esc_html_e( 'How tightly the ring tracks the pointer. Higher = snappier (less lag); lower = smoother trailing. Default 0.2.', 'bubble-cursor' ); ?></span></td>
 					</tr>
 					<tr>
 						<th scope="row"><?php esc_html_e( 'Ring thickness', 'bubble-cursor' ); ?></th>

@@ -27,6 +27,10 @@
     return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   }
 
+  function nowMs() {
+    return (window.performance && window.performance.now) ? window.performance.now() : Date.now();
+  }
+
   ready(function () {
     try {
     var s = window.BubbleCursorSettings || {};
@@ -47,6 +51,7 @@
       textSelector: s.textSelector || '[data-bubble-cursor-text]',
       ringSize: num(s.ringSize, 40),
       dotSize: num(s.dotSize, 8),
+      ringSpeed: Math.max(0.03, Math.min(0.9, num(s.ringSpeed, 0.2))),
       ringBorder: num(s.ringBorder, 1.5),
       cursorOpacity: num(s.cursorOpacity, 1),
       smokeOpacity: num(s.smokeOpacity, 1),
@@ -176,9 +181,18 @@
       if (ringLabel) ringLabel.textContent = (desired === 'text') ? label : '';
     }
 
+    var lastFrameT = nowMs();
     function animate() {
-      ringX += (mouseX - ringX) * 0.18;
-      ringY += (mouseY - ringY) * 0.18;
+      var t = nowMs();
+      var dt = t - lastFrameT;
+      lastFrameT = t;
+      if (dt > 100) dt = 100; // avoid a big jump after a background tab / stall
+      // Frame-rate-independent easing: the ring catches up at a consistent rate
+      // whether the page runs at 30, 60 or 144 fps (the smoke sim varies it),
+      // so the motion stays smooth instead of stepping unevenly.
+      var f = 1 - Math.pow(1 - settings.ringSpeed, dt / 16.667);
+      ringX += (mouseX - ringX) * f;
+      ringY += (mouseY - ringY) * f;
       if (ring) {
         ring.style.transform = 'translate3d(' + ringX + 'px,' + ringY + 'px,0) translate(-50%,-50%)';
       }
