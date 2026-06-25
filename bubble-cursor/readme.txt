@@ -4,7 +4,7 @@ Tags: cursor, custom cursor, fluid, webgl, smoke, mouse, elementor
 Requires at least: 5.6
 Tested up to: 6.8
 Requires PHP: 7.2
-Stable tag: 1.2.2
+Stable tag: 1.3.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -49,7 +49,10 @@ No. It runs on any theme. Elementor "Cursor Hover Effect Text" settings are
 picked up automatically when present.
 
 = How do I show custom hover text on a specific element? =
-Add `data-bubble-cursor-text="Open"` (or any word) to the element.
+Either add `data-bubble-cursor-text="Open"` (or any word) to the element, or —
+if you can't edit the markup — put a CSS selector for it in the "Hover text
+selector" setting (e.g. `.qodef-e-media-image`) and it will show the global
+hover word.
 
 = How do I make an element trigger the enlarged ring? =
 It already triggers on links and buttons. For anything else, add
@@ -60,6 +63,12 @@ settings.
 That is intentional — a fluid mouse cursor has no meaning on touch screens.
 
 == Changelog ==
+
+= 1.3.0 =
+* New "Hover text selector" setting: show the hover word (e.g. "View") on any
+  elements you target with a CSS selector — no need to edit theme markup. Great
+  for portfolio/image items from themes that don't use the data attribute.
+* Hardened selector matching so a typo in any selector field can't cause errors.
 
 = 1.2.2 =
 * Smoother ring motion: the follow easing is now frame-rate independent, so the

@@ -31,6 +31,13 @@
     return (window.performance && window.performance.now) ? window.performance.now() : Date.now();
   }
 
+  // el.closest() throws on an invalid selector — guard so a typo in a settings
+  // field can never break the per-frame hit-test.
+  function safeClosest(el, sel) {
+    if (!sel || !el || !el.closest) return null;
+    try { return el.closest(sel); } catch (e) { return null; }
+  }
+
   ready(function () {
     try {
     var s = window.BubbleCursorSettings || {};
@@ -48,6 +55,7 @@
       hoverText: s.hoverText !== undefined ? s.hoverText : 'View',
       hoverEffect: s.hoverEffect !== undefined ? !!s.hoverEffect : true,
       hoverSelector: s.hoverSelector || 'a[href], button:not(:disabled), input[type="submit"], input[type="button"], .elementor-button, [data-bubble-cursor-hover]',
+      hoverTextSelector: s.hoverTextSelector || '',
       textSelector: s.textSelector || '[data-bubble-cursor-text]',
       ringSize: num(s.ringSize, 40),
       dotSize: num(s.dotSize, 8),
@@ -145,9 +153,13 @@
 
     // Resolve the hover label for an element (explicit attribute or Elementor setting).
     function resolveHoverText(el) {
-      var explicit = el.closest('[data-bubble-cursor-text]');
+      var explicit = safeClosest(el, '[data-bubble-cursor-text]');
       if (explicit) return explicit.getAttribute('data-bubble-cursor-text');
-      var elementor = el.closest('[data-settings]');
+      // Elements matching the user's "hover text selector" show the global word.
+      if (settings.hoverTextSelector && settings.hoverText && safeClosest(el, settings.hoverTextSelector)) {
+        return settings.hoverText;
+      }
+      var elementor = safeClosest(el, '[data-settings]');
       if (elementor) {
         try {
           var data = JSON.parse(elementor.getAttribute('data-settings'));
@@ -170,7 +182,7 @@
       if (el && el.closest) {
         var text = resolveHoverText(el);
         if (text && settings.hoverText !== false) { desired = 'text'; label = text; }
-        else if (el.closest(settings.hoverSelector)) { desired = 'hover'; }
+        else if (safeClosest(el, settings.hoverSelector)) { desired = 'hover'; }
       }
       if (desired === hoverState && label === hoverLabel) return; // no change → no DOM write
 

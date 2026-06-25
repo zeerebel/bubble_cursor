@@ -3,7 +3,7 @@
  * Plugin Name:       Bubble Cursor — Smokey Fluid Cursor
  * Plugin URI:        https://github.com/zeerebel/bubble_cursor
  * Description:       Adds a colourful WebGL "smoke" fluid trail plus a dot + ring custom cursor with a "View" hover bubble — a replica of the TreeThemes "Deep" theme cursor. Works on any theme (Elementor or not). No coding required.
- * Version:           1.2.2
+ * Version:           1.3.0
  * Requires at least: 5.6
  * Requires PHP:      7.2
  * Author:            zeerebel
@@ -20,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // No direct access.
 }
 
-define( 'BUBBLE_CURSOR_VERSION', '1.2.2' );
+define( 'BUBBLE_CURSOR_VERSION', '1.3.0' );
 define( 'BUBBLE_CURSOR_FILE', __FILE__ );
 define( 'BUBBLE_CURSOR_URL', plugin_dir_url( __FILE__ ) );
 define( 'BUBBLE_CURSOR_PATH', plugin_dir_path( __FILE__ ) );
@@ -76,6 +76,7 @@ final class Bubble_Cursor {
 			'hover_text'            => 'View',
 			'hover_effect'          => 1,
 			'hover_selector'        => 'a[href], button:not(:disabled), input[type="submit"], input[type="button"], .elementor-button, [data-bubble-cursor-hover]',
+			'hover_text_selector'   => '',
 			// Shape & transparency.
 			'dot_size'              => 8,
 			'ring_size'             => 40,
@@ -265,9 +266,10 @@ final class Bubble_Cursor {
 				'hideOnTouch'      => (bool) $o['hide_on_touch'],
 				'dotColor'         => $o['dot_color'],
 				'ringColor'        => $o['ring_color'],
-				'hoverText'        => '' === $o['hover_text'] ? false : $o['hover_text'],
-				'hoverEffect'      => (bool) $o['hover_effect'],
-				'hoverSelector'    => $o['hover_selector'],
+				'hoverText'         => '' === $o['hover_text'] ? false : $o['hover_text'],
+				'hoverEffect'       => (bool) $o['hover_effect'],
+				'hoverSelector'     => $o['hover_selector'],
+				'hoverTextSelector' => $o['hover_text_selector'],
 				'dotSize'          => (float) $o['dot_size'],
 				'ringSize'         => (float) $o['ring_size'],
 				'ringSpeed'        => (float) $o['ring_speed'],
@@ -360,6 +362,9 @@ final class Bubble_Cursor {
 		if ( '' === trim( $out['hover_selector'] ) ) {
 			$out['hover_selector'] = $d['hover_selector'];
 		}
+
+		// Empty is allowed here (means "off").
+		$out['hover_text_selector'] = isset( $input['hover_text_selector'] ) ? sanitize_text_field( $input['hover_text_selector'] ) : $d['hover_text_selector'];
 
 		$out['splat_force']          = $this->clamp_float( $input, 'splat_force', $d, 100, 20000 );
 		$out['splat_radius']         = $this->clamp_float( $input, 'splat_radius', $d, 0.01, 1 );
@@ -495,6 +500,13 @@ final class Bubble_Cursor {
 						<td>
 							<input type="text" class="regular-text" name="<?php echo esc_attr( $n ); ?>[hover_text]" value="<?php echo esc_attr( $o['hover_text'] ); ?>" placeholder="View">
 							<p class="description"><?php esc_html_e( 'Word shown inside the ring when hovering elements that carry a hover label. Leave blank to disable. Add data-bubble-cursor-text="Open" to any element to override per-element. Elementor containers using the "Cursor Hover Effect Text" setting are detected automatically.', 'bubble-cursor' ); ?></p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Hover text selector', 'bubble-cursor' ); ?></th>
+						<td>
+							<input type="text" class="large-text code" name="<?php echo esc_attr( $n ); ?>[hover_text_selector]" value="<?php echo esc_attr( $o['hover_text_selector'] ); ?>" placeholder=".qodef-e-media-image, .portfolio-item">
+							<p class="description"><?php esc_html_e( 'Show the hover word (above) on any element matching this CSS selector — e.g. .qodef-e-media-image for elements with class="qodef-e-media-image". Comma-separate several. Use a leading dot for a class, # for an id. Leave blank for none.', 'bubble-cursor' ); ?></p>
 						</td>
 					</tr>
 					<tr>
