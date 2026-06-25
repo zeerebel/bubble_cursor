@@ -26,6 +26,7 @@
     SPLAT_FORCE: 6000,
     SHADING: true,
     COLORFUL: true,
+    INTENSITY: 1,
     COLOR_UPDATE_SPEED: 10,
     PAUSED: false,
     BACK_COLOR: { r: 0, g: 0, b: 0 },
@@ -592,6 +593,11 @@
         gl.activeTexture(gl.TEXTURE0 + id);
         gl.bindTexture(gl.TEXTURE_2D, texture);
         return id;
+      },
+      // Release the GPU texture + framebuffer so re-creating on resize does not leak.
+      destroy: function () {
+        if (texture) { gl.deleteTexture(texture); texture = null; }
+        if (fbo) { gl.deleteFramebuffer(fbo); fbo = null; }
       }
     };
   };
@@ -615,12 +621,14 @@
     copy.bind();
     this.gl.uniform1i(copy.uniforms.uTexture, target.attach(0));
     this._blit(newFBO);
+    if (target && target.destroy) target.destroy(); // free the old buffer we just copied from
     return newFBO;
   };
 
   FluidSim.prototype.resizeDoubleFBO = function (target, w, h, internalFormat, format, type, param) {
     if (target.width === w && target.height === h) return target;
     target.read = this.resizeFBO(target.read, w, h, internalFormat, format, type, param);
+    if (target.write && target.write.destroy) target.write.destroy();
     target.write = this.createFBO(w, h, internalFormat, format, type, param);
     target.width = w;
     target.height = h;
@@ -676,6 +684,14 @@
     if (!this.velocity) this.velocity = this.createDoubleFBO(simRes.width, simRes.height, rg.internalFormat, rg.format, texType, filtering);
     else this.velocity = this.resizeDoubleFBO(this.velocity, simRes.width, simRes.height, rg.internalFormat, rg.format, texType, filtering);
 
+    // Free single-use buffers from a previous init (resize) before re-allocating.
+    if (this.divergence && this.divergence.destroy) this.divergence.destroy();
+    if (this.curl && this.curl.destroy) this.curl.destroy();
+    if (this.pressure) {
+      if (this.pressure.read && this.pressure.read.destroy) this.pressure.read.destroy();
+      if (this.pressure.write && this.pressure.write.destroy) this.pressure.write.destroy();
+    }
+
     this.divergence = this.createFBO(simRes.width, simRes.height, r.internalFormat, r.format, texType, gl.NEAREST);
     this.curl = this.createFBO(simRes.width, simRes.height, r.internalFormat, r.format, texType, gl.NEAREST);
     this.pressure = this.createDoubleFBO(simRes.width, simRes.height, r.internalFormat, r.format, texType, gl.NEAREST);
@@ -690,6 +706,13 @@
     var texType = ext.halfFloatTexType;
     var rgba = ext.formatRGBA;
     var filtering = ext.supportLinearFiltering ? gl.LINEAR : gl.NEAREST;
+    // Free bloom buffers from a previous init (resize) before re-allocating.
+    if (this.bloom && this.bloom.destroy) this.bloom.destroy();
+    if (this.bloomFramebuffers) {
+      for (var bi = 0; bi < this.bloomFramebuffers.length; bi++) {
+        if (this.bloomFramebuffers[bi] && this.bloomFramebuffers[bi].destroy) this.bloomFramebuffers[bi].destroy();
+      }
+    }
     this.bloom = this.createFBO(res.width, res.height, rgba.internalFormat, rgba.format, texType, filtering);
     this.bloomFramebuffers = [];
     for (var i = 0; i < config.BLOOM_ITERATIONS; i++) {
@@ -915,9 +938,10 @@
     return delta;
   }
 
-  function generateColor() {
+  function generateColor(mult) {
+    if (mult == null) { mult = 0.15; }
     var c = HSVtoRGB(Math.random(), 1.0, 1.0);
-    c.r *= 0.15; c.g *= 0.15; c.b *= 0.15;
+    c.r *= mult; c.g *= mult; c.b *= mult;
     return c;
   }
 
@@ -979,7 +1003,7 @@
       var posY = clientY - rect.top;
       if (!pointer.down) {
         pointer.down = true;
-        pointer.color = generateColor();
+        pointer.color = generateColor(self.config.INTENSITY * 0.15);
         pointer.prevTexcoordX = posX / self.canvas.clientWidth;
         pointer.prevTexcoordY = 1.0 - posY / self.canvas.clientHeight;
         pointer.texcoordX = pointer.prevTexcoordX;
@@ -993,12 +1017,28 @@
       if (!e.touches || !e.touches.length) return;
       move(e.touches[0].clientX, e.touches[0].clientY);
     }, { passive: true });
+
+    // Debounce resize so dragging / mobile URL-bar toggles do not thrash the
+    // (now leak-free) framebuffer re-allocation.
     add(window, 'resize', function () {
-      if (self.resize()) self.initFramebuffers();
+      if (self._resizeTimer) { window.clearTimeout(self._resizeTimer); }
+      self._resizeTimer = window.setTimeout(function () {
+        self._resizeTimer = null;
+        if (self.running && self.resize()) self.initFramebuffers();
+      }, 200);
+    });
+
+    // If the GPU resets / context is lost, stop cleanly instead of throwing
+    // every frame.
+    add(self.canvas, 'webglcontextlost', function (e) {
+      if (e && e.preventDefault) { e.preventDefault(); }
+      self.contextLost = true;
+      self.stop();
     });
   };
 
   FluidSim.prototype.frame = function () {
+    if (this.contextLost) return;
     var t = now();
     var dt = Math.min((t - this.lastUpdate) / 1000, 0.016666);
     this.lastUpdate = t;
@@ -1007,7 +1047,7 @@
       this.colorUpdateTimer += dt * this.config.COLOR_UPDATE_SPEED;
       if (this.colorUpdateTimer >= 1) {
         this.colorUpdateTimer = this.colorUpdateTimer % 1;
-        for (var i = 0; i < this.pointers.length; i++) this.pointers[i].color = generateColor();
+        for (var i = 0; i < this.pointers.length; i++) this.pointers[i].color = generateColor(this.config.INTENSITY * 0.15);
       }
     }
 
@@ -1022,7 +1062,13 @@
     var self = this;
     var loop = function () {
       if (!self.running) return;
-      self.frame();
+      try {
+        self.frame();
+      } catch (err) {
+        if (window.console && console.warn) { console.warn('[BubbleCursor] fluid stopped after a runtime error:', err); }
+        self.stop();
+        return;
+      }
       self._raf = window.requestAnimationFrame(loop);
     };
     this.lastUpdate = now();
@@ -1037,11 +1083,33 @@
 
   FluidSim.prototype.destroy = function () {
     this.stop();
+    if (this._resizeTimer) { window.clearTimeout(this._resizeTimer); this._resizeTimer = null; }
     for (var i = 0; i < this._listeners.length; i++) {
       var l = this._listeners[i];
       l.target.removeEventListener(l.type, l.handler);
     }
     this._listeners = [];
+    this._freeGL();
+  };
+
+  // Release every GPU resource. Called on teardown (page unload / re-init) so
+  // nothing accumulates across navigations or settings changes.
+  FluidSim.prototype._freeGL = function () {
+    var del = function (f) { if (f && f.destroy) f.destroy(); };
+    var delDouble = function (d) { if (d) { del(d.read); del(d.write); } };
+    delDouble(this.dye); delDouble(this.velocity); delDouble(this.pressure);
+    del(this.divergence); del(this.curl); del(this.bloom);
+    if (this.bloomFramebuffers) {
+      for (var i = 0; i < this.bloomFramebuffers.length; i++) del(this.bloomFramebuffers[i]);
+    }
+    this.dye = this.velocity = this.pressure = null;
+    this.divergence = this.curl = this.bloom = null;
+    this.bloomFramebuffers = [];
+    var gl = this.gl;
+    if (gl) {
+      var lose = gl.getExtension('WEBGL_lose_context');
+      if (lose) { try { lose.loseContext(); } catch (e) { /* ignore */ } }
+    }
   };
 
   /* ----------------------------------------------------------------- *

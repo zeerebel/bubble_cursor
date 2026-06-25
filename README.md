@@ -54,8 +54,21 @@ You can also just copy the `bubble-cursor` folder into
 * Toggle each layer independently: smoke, ring, dot, and whether to hide the
   native OS cursor (the Deep demo keeps it visible — that's the default).
 * Dot / ring colours, the hover word (default **View**), and the hover selector.
-* Smoke physics: colourful on/off, bloom glow, splat force, splat radius, and
-  the density / velocity fade rates — pre-filled with the demo's values.
+* **Shape, size & transparency:** dot size, ring size, ring thickness, cursor
+  opacity, and smoke opacity.
+* **Smoke physics & intensity:** colourful on/off, bloom glow + intensity,
+  smoke intensity/brightness, swirl, splat force, splat radius, density /
+  velocity fade, a **Low / Medium / High** quality preset, and a blend mode
+  (e.g. *screen* / *lighten* to keep text readable).
+
+### Won't crash your site
+
+The engine is built defensively for live use: GPU framebuffers are freed on
+every resize (no memory leak), resize handling is debounced, WebGL context-loss
+is handled, and both the render loop and the front-end init are wrapped so a
+cursor error fails silently instead of taking the page down. It also bails on
+touch devices, respects "reduced motion", and does nothing if the browser has
+no WebGL.
 
 ### Per-element hover text (optional)
 
