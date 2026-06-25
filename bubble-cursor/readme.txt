@@ -4,7 +4,7 @@ Tags: cursor, custom cursor, fluid, webgl, smoke, mouse, elementor
 Requires at least: 5.6
 Tested up to: 6.8
 Requires PHP: 7.2
-Stable tag: 1.0.0
+Stable tag: 1.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -60,6 +60,15 @@ settings.
 That is intentional — a fluid mouse cursor has no meaning on touch screens.
 
 == Changelog ==
+
+= 1.1.0 =
+* New controls: dot/ring size, ring thickness, cursor opacity, smoke opacity,
+  smoke blend mode, smoke intensity/brightness, bloom intensity, swirl, and a
+  Low/Medium/High quality preset.
+* Stability: framebuffers are now freed on resize (fixes a GPU-memory leak),
+  resize handling is debounced, WebGL context-loss is handled gracefully, and
+  both the engine loop and front-end init are wrapped so a cursor error can
+  never take the page down.
 
 = 1.0.0 =
 * Initial release: WebGL smoke fluid layer, dot + ring follower, "View" hover

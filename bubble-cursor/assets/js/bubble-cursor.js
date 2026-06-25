@@ -28,7 +28,10 @@
   }
 
   ready(function () {
+    try {
     var s = window.BubbleCursorSettings || {};
+
+    var num = function (v, d) { return (v === undefined || v === null || isNaN(v)) ? d : Number(v); };
 
     var settings = {
       enableFluid: s.enableFluid !== undefined ? !!s.enableFluid : true,
@@ -41,8 +44,12 @@
       hoverText: s.hoverText !== undefined ? s.hoverText : 'View',
       hoverSelector: s.hoverSelector || 'a[href], button:not(:disabled), input[type="submit"], input[type="button"], .elementor-button, [data-bubble-cursor-hover]',
       textSelector: s.textSelector || '[data-bubble-cursor-text]',
-      ringSize: s.ringSize || 40,
-      dotSize: s.dotSize || 8,
+      ringSize: num(s.ringSize, 40),
+      dotSize: num(s.dotSize, 8),
+      ringBorder: num(s.ringBorder, 1.5),
+      cursorOpacity: num(s.cursorOpacity, 1),
+      smokeOpacity: num(s.smokeOpacity, 1),
+      smokeBlend: s.smokeBlend || '',
       mixBlend: s.mixBlend || '',
       fluid: s.fluid || {}
     };
@@ -54,6 +61,7 @@
     var reduced = prefersReducedMotion();
     var root = document.documentElement;
     root.classList.add('bc-active');
+    root.style.setProperty('--bc-opacity', settings.cursorOpacity);
     if (settings.hideNativeCursor) root.classList.add('bc-hide-native');
 
     /* ---- Fluid (smoke) layer ------------------------------------- */
@@ -61,6 +69,8 @@
       var canvas = document.createElement('canvas');
       canvas.className = 'bc-fluid-canvas';
       canvas.setAttribute('aria-hidden', 'true');
+      canvas.style.opacity = settings.smokeOpacity;
+      if (settings.smokeBlend) canvas.style.mixBlendMode = settings.smokeBlend;
       document.body.appendChild(canvas);
       window.BubbleCursorFluid.start(canvas, settings.fluid);
     }
@@ -84,6 +94,7 @@
         ring.setAttribute('aria-hidden', 'true');
         ring.style.setProperty('--bc-ring-size', settings.ringSize + 'px');
         ring.style.setProperty('--bc-ring-color', settings.ringColor);
+        ring.style.setProperty('--bc-ring-border', settings.ringBorder + 'px');
         if (settings.mixBlend) ring.style.mixBlendMode = settings.mixBlend;
         ringLabel = document.createElement('span');
         ringLabel.className = 'bc-ring__label';
@@ -185,5 +196,9 @@
       if (rafId) window.cancelAnimationFrame(rafId);
       if (window.BubbleCursorFluid) window.BubbleCursorFluid.stop();
     });
+    } catch (err) {
+      // Never let a cursor problem take the page down — fail silently.
+      if (window.console && console.warn) { console.warn('[BubbleCursor] init skipped:', err); }
+    }
   });
 })(window, document);

@@ -52,7 +52,7 @@ html.bc-active.bc-hide-native * {
   justify-content: center;
   width: var(--bc-ring-size, 40px);
   height: var(--bc-ring-size, 40px);
-  border: 1.5px solid var(--bc-ring-color, #fff);
+  border: var(--bc-ring-border, 1.5px) solid var(--bc-ring-color, #fff);
   background: transparent;
   transform: translate3d(-100px, -100px, 0) translate(-50%, -50%);
   transition: opacity 0.25s ease, width 0.25s ease, height 0.25s ease,
@@ -76,10 +76,10 @@ html.bc-active.bc-hide-native * {
   user-select: none;
 }
 
-/* Reveal the follower once the mouse has moved. */
+/* Reveal the follower once the mouse has moved (opacity is user-configurable). */
 html.bc-visible .bc-dot,
 html.bc-visible .bc-ring {
-  opacity: 1;
+  opacity: var(--bc-opacity, 1);
 }
 
 /* Hover over interactive elements: grow the ring, hide the dot. */

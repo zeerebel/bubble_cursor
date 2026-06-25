@@ -3,7 +3,7 @@
  * Plugin Name:       Bubble Cursor — Smokey Fluid Cursor
  * Plugin URI:        https://github.com/zeerebel/bubble_cursor
  * Description:       Adds a colourful WebGL "smoke" fluid trail plus a dot + ring custom cursor with a "View" hover bubble — a replica of the TreeThemes "Deep" theme cursor. Works on any theme (Elementor or not). No coding required.
- * Version:           1.0.0
+ * Version:           1.1.0
  * Requires at least: 5.6
  * Requires PHP:      7.2
  * Author:            zeerebel
@@ -20,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // No direct access.
 }
 
-define( 'BUBBLE_CURSOR_VERSION', '1.0.0' );
+define( 'BUBBLE_CURSOR_VERSION', '1.1.0' );
 define( 'BUBBLE_CURSOR_FILE', __FILE__ );
 define( 'BUBBLE_CURSOR_URL', plugin_dir_url( __FILE__ ) );
 define( 'BUBBLE_CURSOR_PATH', plugin_dir_path( __FILE__ ) );
@@ -75,13 +75,52 @@ final class Bubble_Cursor {
 			'ring_color'            => '#ffffff',
 			'hover_text'            => 'View',
 			'hover_selector'        => 'a[href], button:not(:disabled), input[type="submit"], input[type="button"], .elementor-button, [data-bubble-cursor-hover]',
+			// Shape & transparency.
+			'dot_size'              => 8,
+			'ring_size'             => 40,
+			'ring_border'           => 1.5,
+			'cursor_opacity'        => 1,
+			'smoke_opacity'         => 1,
+			'smoke_blend'           => '',
+			// Smoke physics / intensity.
 			'colorful'              => 1,
 			'bloom'                 => 1,
+			'bloom_intensity'       => 0.8,
+			'intensity'             => 1,
+			'curl'                  => 30,
+			'quality'               => 'medium',
 			'splat_force'           => 6000,
 			'splat_radius'          => 0.25,
 			'density_dissipation'   => 0.98,
 			'velocity_dissipation'  => 0.98,
 		);
+	}
+
+	/**
+	 * Allowed CSS mix-blend-mode values for the smoke canvas.
+	 *
+	 * @return array
+	 */
+	private static function blend_modes() {
+		return array( '', 'screen', 'lighten', 'overlay', 'difference', 'color-dodge', 'hard-light', 'soft-light' );
+	}
+
+	/**
+	 * Map a quality preset to a dye (smoke) resolution.
+	 *
+	 * @param string $quality low | medium | high.
+	 * @return int
+	 */
+	private static function quality_to_dye( $quality ) {
+		switch ( $quality ) {
+			case 'low':
+				return 512;
+			case 'high':
+				return 1440;
+			case 'medium':
+			default:
+				return 1024;
+		}
 	}
 
 	/**
@@ -192,11 +231,21 @@ final class Bubble_Cursor {
 				'ringColor'        => $o['ring_color'],
 				'hoverText'        => '' === $o['hover_text'] ? false : $o['hover_text'],
 				'hoverSelector'    => $o['hover_selector'],
+				'dotSize'          => (float) $o['dot_size'],
+				'ringSize'         => (float) $o['ring_size'],
+				'ringBorder'       => (float) $o['ring_border'],
+				'cursorOpacity'    => (float) $o['cursor_opacity'],
+				'smokeOpacity'     => (float) $o['smoke_opacity'],
+				'smokeBlend'       => $o['smoke_blend'],
 				'fluid'            => array(
 					'SPLAT_FORCE'          => (float) $o['splat_force'],
 					'SPLAT_RADIUS'         => (float) $o['splat_radius'],
 					'DENSITY_DISSIPATION'  => (float) $o['density_dissipation'],
 					'VELOCITY_DISSIPATION' => (float) $o['velocity_dissipation'],
+					'CURL'                 => (float) $o['curl'],
+					'INTENSITY'            => (float) $o['intensity'],
+					'BLOOM_INTENSITY'      => (float) $o['bloom_intensity'],
+					'DYE_RESOLUTION'       => self::quality_to_dye( $o['quality'] ),
 					'COLORFUL'             => (bool) $o['colorful'],
 					'BLOOM'                => (bool) $o['bloom'],
 				),
@@ -273,6 +322,24 @@ final class Bubble_Cursor {
 		$out['splat_radius']         = $this->clamp_float( $input, 'splat_radius', $d, 0.01, 1 );
 		$out['density_dissipation']  = $this->clamp_float( $input, 'density_dissipation', $d, 0.5, 4 );
 		$out['velocity_dissipation'] = $this->clamp_float( $input, 'velocity_dissipation', $d, 0.5, 4 );
+
+		// Shape & transparency.
+		$out['dot_size']       = $this->clamp_float( $input, 'dot_size', $d, 2, 40 );
+		$out['ring_size']      = $this->clamp_float( $input, 'ring_size', $d, 10, 120 );
+		$out['ring_border']    = $this->clamp_float( $input, 'ring_border', $d, 0, 8 );
+		$out['cursor_opacity'] = $this->clamp_float( $input, 'cursor_opacity', $d, 0.1, 1 );
+		$out['smoke_opacity']  = $this->clamp_float( $input, 'smoke_opacity', $d, 0.1, 1 );
+
+		// Smoke intensity.
+		$out['intensity']       = $this->clamp_float( $input, 'intensity', $d, 0.2, 3 );
+		$out['bloom_intensity'] = $this->clamp_float( $input, 'bloom_intensity', $d, 0, 2 );
+		$out['curl']            = $this->clamp_float( $input, 'curl', $d, 0, 50 );
+
+		$quality        = isset( $input['quality'] ) ? $input['quality'] : $d['quality'];
+		$out['quality'] = in_array( $quality, array( 'low', 'medium', 'high' ), true ) ? $quality : $d['quality'];
+
+		$blend              = isset( $input['smoke_blend'] ) ? $input['smoke_blend'] : $d['smoke_blend'];
+		$out['smoke_blend'] = in_array( $blend, self::blend_modes(), true ) ? $blend : $d['smoke_blend'];
 
 		return $out;
 	}
@@ -373,6 +440,26 @@ final class Bubble_Cursor {
 					</tr>
 				</table>
 
+				<h2 class="title"><?php esc_html_e( 'Shape, size & transparency', 'bubble-cursor' ); ?></h2>
+				<table class="form-table" role="presentation">
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Dot size', 'bubble-cursor' ); ?></th>
+						<td><input type="number" step="1" min="2" max="40" name="<?php echo esc_attr( $n ); ?>[dot_size]" value="<?php echo esc_attr( $o['dot_size'] ); ?>"> <span class="description"><?php esc_html_e( 'px (default 8)', 'bubble-cursor' ); ?></span></td>
+					</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Ring size', 'bubble-cursor' ); ?></th>
+						<td><input type="number" step="1" min="10" max="120" name="<?php echo esc_attr( $n ); ?>[ring_size]" value="<?php echo esc_attr( $o['ring_size'] ); ?>"> <span class="description"><?php esc_html_e( 'px (default 40)', 'bubble-cursor' ); ?></span></td>
+					</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Ring thickness', 'bubble-cursor' ); ?></th>
+						<td><input type="number" step="0.5" min="0" max="8" name="<?php echo esc_attr( $n ); ?>[ring_border]" value="<?php echo esc_attr( $o['ring_border'] ); ?>"> <span class="description"><?php esc_html_e( 'px border (default 1.5)', 'bubble-cursor' ); ?></span></td>
+					</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Cursor opacity', 'bubble-cursor' ); ?></th>
+						<td><input type="number" step="0.05" min="0.1" max="1" name="<?php echo esc_attr( $n ); ?>[cursor_opacity]" value="<?php echo esc_attr( $o['cursor_opacity'] ); ?>"> <span class="description"><?php esc_html_e( 'Transparency of the dot + ring, 0.1–1 (default 1).', 'bubble-cursor' ); ?></span></td>
+					</tr>
+				</table>
+
 				<h2 class="title"><?php esc_html_e( 'Smoke tuning', 'bubble-cursor' ); ?></h2>
 				<table class="form-table" role="presentation">
 					<tr>
@@ -382,6 +469,49 @@ final class Bubble_Cursor {
 					<tr>
 						<th scope="row"><?php esc_html_e( 'Bloom glow', 'bubble-cursor' ); ?></th>
 						<td><label><input type="checkbox" name="<?php echo esc_attr( $n ); ?>[bloom]" value="1" <?php checked( $o['bloom'], 1 ); ?>> <?php esc_html_e( 'Soft glow around bright smoke', 'bubble-cursor' ); ?></label></td>
+					</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Bloom intensity', 'bubble-cursor' ); ?></th>
+						<td><input type="number" step="0.1" min="0" max="2" name="<?php echo esc_attr( $n ); ?>[bloom_intensity]" value="<?php echo esc_attr( $o['bloom_intensity'] ); ?>"> <span class="description"><?php esc_html_e( 'Strength of the glow, 0–2 (default 0.8).', 'bubble-cursor' ); ?></span></td>
+					</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Smoke intensity', 'bubble-cursor' ); ?></th>
+						<td><input type="number" step="0.1" min="0.2" max="3" name="<?php echo esc_attr( $n ); ?>[intensity]" value="<?php echo esc_attr( $o['intensity'] ); ?>"> <span class="description"><?php esc_html_e( 'Brightness / vividness of each puff, 0.2–3 (default 1).', 'bubble-cursor' ); ?></span></td>
+					</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Swirl', 'bubble-cursor' ); ?></th>
+						<td><input type="number" step="1" min="0" max="50" name="<?php echo esc_attr( $n ); ?>[curl]" value="<?php echo esc_attr( $o['curl'] ); ?>"> <span class="description"><?php esc_html_e( 'How much the smoke curls / swirls, 0–50 (default 30).', 'bubble-cursor' ); ?></span></td>
+					</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Smoke opacity', 'bubble-cursor' ); ?></th>
+						<td><input type="number" step="0.05" min="0.1" max="1" name="<?php echo esc_attr( $n ); ?>[smoke_opacity]" value="<?php echo esc_attr( $o['smoke_opacity'] ); ?>"> <span class="description"><?php esc_html_e( 'Transparency of the whole smoke layer, 0.1–1 (default 1).', 'bubble-cursor' ); ?></span></td>
+					</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Quality', 'bubble-cursor' ); ?></th>
+						<td>
+							<select name="<?php echo esc_attr( $n ); ?>[quality]">
+								<option value="low" <?php selected( $o['quality'], 'low' ); ?>><?php esc_html_e( 'Low (fastest)', 'bubble-cursor' ); ?></option>
+								<option value="medium" <?php selected( $o['quality'], 'medium' ); ?>><?php esc_html_e( 'Medium (default)', 'bubble-cursor' ); ?></option>
+								<option value="high" <?php selected( $o['quality'], 'high' ); ?>><?php esc_html_e( 'High (sharpest, heavier)', 'bubble-cursor' ); ?></option>
+							</select>
+							<p class="description"><?php esc_html_e( 'Smoke resolution. Use Low on lower-powered devices for smoother performance.', 'bubble-cursor' ); ?></p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Smoke blend mode', 'bubble-cursor' ); ?></th>
+						<td>
+							<select name="<?php echo esc_attr( $n ); ?>[smoke_blend]">
+								<option value="" <?php selected( $o['smoke_blend'], '' ); ?>><?php esc_html_e( 'Normal (over content)', 'bubble-cursor' ); ?></option>
+								<option value="screen" <?php selected( $o['smoke_blend'], 'screen' ); ?>>screen</option>
+								<option value="lighten" <?php selected( $o['smoke_blend'], 'lighten' ); ?>>lighten</option>
+								<option value="overlay" <?php selected( $o['smoke_blend'], 'overlay' ); ?>>overlay</option>
+								<option value="soft-light" <?php selected( $o['smoke_blend'], 'soft-light' ); ?>>soft-light</option>
+								<option value="hard-light" <?php selected( $o['smoke_blend'], 'hard-light' ); ?>>hard-light</option>
+								<option value="color-dodge" <?php selected( $o['smoke_blend'], 'color-dodge' ); ?>>color-dodge</option>
+								<option value="difference" <?php selected( $o['smoke_blend'], 'difference' ); ?>>difference</option>
+							</select>
+							<p class="description"><?php esc_html_e( 'How the smoke mixes with the page. "screen" or "lighten" keep text more readable on dark sites.', 'bubble-cursor' ); ?></p>
+						</td>
 					</tr>
 					<tr>
 						<th scope="row"><?php esc_html_e( 'Splat force', 'bubble-cursor' ); ?></th>
