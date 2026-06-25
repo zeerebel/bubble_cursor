@@ -1,0 +1,112 @@
+/*!
+ * Bubble Cursor styles — fluid canvas + dot/ring follower + hover bubble.
+ * Sizes/colours are driven by CSS custom properties set inline by the JS,
+ * so hover rules can override cleanly without !important.
+ */
+
+/* Full-viewport smoke canvas, painted under all page content. */
+.bc-fluid-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 2147483640;
+  pointer-events: none;
+  display: block;
+}
+
+/* When the native cursor should be hidden (optional). */
+html.bc-active.bc-hide-native,
+html.bc-active.bc-hide-native * {
+  cursor: none !important;
+}
+
+/* Shared base for the follower elements. */
+.bc-dot,
+.bc-ring {
+  position: fixed;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 2147483646;
+  border-radius: 50%;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  will-change: transform;
+}
+
+/* Small, tight-tracking dot. */
+.bc-dot {
+  width: var(--bc-dot-size, 8px);
+  height: var(--bc-dot-size, 8px);
+  margin: 0;
+  background: var(--bc-dot-color, #fff);
+  transform: translate3d(-100px, -100px, 0) translate(-50%, -50%);
+}
+
+/* Larger ring that eases behind the dot. */
+.bc-ring {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--bc-ring-size, 40px);
+  height: var(--bc-ring-size, 40px);
+  border: 1.5px solid var(--bc-ring-color, #fff);
+  background: transparent;
+  transform: translate3d(-100px, -100px, 0) translate(-50%, -50%);
+  transition: opacity 0.25s ease, width 0.25s ease, height 0.25s ease,
+    background-color 0.25s ease, border-color 0.25s ease;
+}
+
+/* The "View" label inside the ring. */
+.bc-ring__label {
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #000;
+  opacity: 0;
+  transform: scale(0.6);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Reveal the follower once the mouse has moved. */
+html.bc-visible .bc-dot,
+html.bc-visible .bc-ring {
+  opacity: 1;
+}
+
+/* Hover over interactive elements: grow the ring, hide the dot. */
+html.bc-hover .bc-ring {
+  width: 64px;
+  height: 64px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+html.bc-hover .bc-dot {
+  opacity: 0;
+}
+
+/* Hover with a text label (e.g. "View"): fill the ring, show the word. */
+html.bc-hover-text .bc-ring {
+  width: 90px;
+  height: 90px;
+  background: #fff;
+  border-color: #fff;
+}
+
+html.bc-hover-text .bc-ring__label {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Respect users who ask for reduced motion: drop the heavy animation. */
+@media (prefers-reduced-motion: reduce) {
+  .bc-fluid-canvas { display: none; }
+}
