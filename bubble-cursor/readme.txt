@@ -4,7 +4,7 @@ Tags: cursor, custom cursor, fluid, webgl, smoke, mouse, elementor
 Requires at least: 5.6
 Tested up to: 6.8
 Requires PHP: 7.2
-Stable tag: 1.2.0
+Stable tag: 1.2.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -60,6 +60,14 @@ settings.
 That is intentional — a fluid mouse cursor has no meaning on touch screens.
 
 == Changelog ==
+
+= 1.2.1 =
+* Fixed the ring "pulsing/rippling" as the pointer crossed nested elements
+  (common on Elementor pages). Hover is now hit-tested once per frame and only
+  changes when it really changes, so the ring transitions smoothly instead of
+  throbbing.
+* New "Ring hover effect" toggle to turn the grow/word effect off entirely for
+  a constant-size ring.
 
 = 1.2.0 =
 * Smoke colours: choose a colour mode — Rainbow (random, the original),

@@ -3,7 +3,7 @@
  * Plugin Name:       Bubble Cursor — Smokey Fluid Cursor
  * Plugin URI:        https://github.com/zeerebel/bubble_cursor
  * Description:       Adds a colourful WebGL "smoke" fluid trail plus a dot + ring custom cursor with a "View" hover bubble — a replica of the TreeThemes "Deep" theme cursor. Works on any theme (Elementor or not). No coding required.
- * Version:           1.2.0
+ * Version:           1.2.1
  * Requires at least: 5.6
  * Requires PHP:      7.2
  * Author:            zeerebel
@@ -20,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // No direct access.
 }
 
-define( 'BUBBLE_CURSOR_VERSION', '1.2.0' );
+define( 'BUBBLE_CURSOR_VERSION', '1.2.1' );
 define( 'BUBBLE_CURSOR_FILE', __FILE__ );
 define( 'BUBBLE_CURSOR_URL', plugin_dir_url( __FILE__ ) );
 define( 'BUBBLE_CURSOR_PATH', plugin_dir_path( __FILE__ ) );
@@ -74,6 +74,7 @@ final class Bubble_Cursor {
 			'dot_color'             => '#ffffff',
 			'ring_color'            => '#ffffff',
 			'hover_text'            => 'View',
+			'hover_effect'          => 1,
 			'hover_selector'        => 'a[href], button:not(:disabled), input[type="submit"], input[type="button"], .elementor-button, [data-bubble-cursor-hover]',
 			// Shape & transparency.
 			'dot_size'              => 8,
@@ -264,6 +265,7 @@ final class Bubble_Cursor {
 				'dotColor'         => $o['dot_color'],
 				'ringColor'        => $o['ring_color'],
 				'hoverText'        => '' === $o['hover_text'] ? false : $o['hover_text'],
+				'hoverEffect'      => (bool) $o['hover_effect'],
 				'hoverSelector'    => $o['hover_selector'],
 				'dotSize'          => (float) $o['dot_size'],
 				'ringSize'         => (float) $o['ring_size'],
@@ -343,6 +345,7 @@ final class Bubble_Cursor {
 		$out['hide_on_touch'] = empty( $input['hide_on_touch'] ) ? 0 : 1;
 		$out['colorful']      = empty( $input['colorful'] ) ? 0 : 1;
 		$out['bloom']         = empty( $input['bloom'] ) ? 0 : 1;
+		$out['hover_effect']  = empty( $input['hover_effect'] ) ? 0 : 1;
 
 		$scope         = isset( $input['scope'] ) ? $input['scope'] : $d['scope'];
 		$out['scope']  = in_array( $scope, array( 'all', 'front' ), true ) ? $scope : $d['scope'];
@@ -479,6 +482,10 @@ final class Bubble_Cursor {
 					<tr>
 						<th scope="row"><?php esc_html_e( 'Adapt to background', 'bubble-cursor' ); ?></th>
 						<td><label><input type="checkbox" name="<?php echo esc_attr( $n ); ?>[auto_contrast]" value="1" <?php checked( $o['auto_contrast'], 1 ); ?>> <?php esc_html_e( 'Auto-invert the dot + ring so they stay visible on light AND dark sections (uses white + "difference" blending; overrides the dot/ring colours above).', 'bubble-cursor' ); ?></label></td>
+					</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Ring hover effect', 'bubble-cursor' ); ?></th>
+						<td><label><input type="checkbox" name="<?php echo esc_attr( $n ); ?>[hover_effect]" value="1" <?php checked( $o['hover_effect'], 1 ); ?>> <?php esc_html_e( 'Grow the ring (and show the hover word) over links/buttons. Turn off for a constant-size ring with no pulsing.', 'bubble-cursor' ); ?></label></td>
 					</tr>
 					<tr>
 						<th scope="row"><?php esc_html_e( 'Hover text', 'bubble-cursor' ); ?></th>

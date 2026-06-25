@@ -42,6 +42,7 @@
       dotColor: s.dotColor || '#ffffff',
       ringColor: s.ringColor || '#ffffff',
       hoverText: s.hoverText !== undefined ? s.hoverText : 'View',
+      hoverEffect: s.hoverEffect !== undefined ? !!s.hoverEffect : true,
       hoverSelector: s.hoverSelector || 'a[href], button:not(:disabled), input[type="submit"], input[type="button"], .elementor-button, [data-bubble-cursor-hover]',
       textSelector: s.textSelector || '[data-bubble-cursor-text]',
       ringSize: num(s.ringSize, 40),
@@ -113,11 +114,17 @@
       }
     }
 
-    /* ---- Movement (lerp follow) ---------------------------------- */
+    /* ---- Movement + hover (frame-based, stable) ------------------ */
     var mouseX = window.innerWidth / 2, mouseY = window.innerHeight / 2;
     var ringX = mouseX, ringY = mouseY;
     var visible = false;
     var rafId = null;
+
+    // Hover state is changed ONLY when it actually differs — no per-element
+    // event thrash, so the ring transitions once and never throbs.
+    var hoverState = '';        // '' | 'hover' | 'text'
+    var hoverLabel = '';
+    var lastHitX = null, lastHitY = null;
 
     function onMove(e) {
       mouseX = e.clientX;
@@ -131,31 +138,8 @@
       }
     }
 
-    function animate() {
-      ringX += (mouseX - ringX) * 0.18;
-      ringY += (mouseY - ringY) * 0.18;
-      if (ring) {
-        ring.style.transform = 'translate3d(' + ringX + 'px,' + ringY + 'px,0) translate(-50%,-50%)';
-      }
-      rafId = window.requestAnimationFrame(animate);
-    }
-
-    if (hasFollower) {
-      window.addEventListener('mousemove', onMove, { passive: true });
-      window.addEventListener('mouseout', function (e) {
-        if (!e.relatedTarget && !e.toElement) {
-          visible = false;
-          root.classList.remove('bc-visible');
-        }
-      });
-      document.addEventListener('mousedown', function () { root.classList.add('bc-down'); });
-      document.addEventListener('mouseup', function () { root.classList.remove('bc-down'); });
-      if (ring) animate();
-    }
-
-    /* ---- Hover state + "View" text ------------------------------- */
+    // Resolve the hover label for an element (explicit attribute or Elementor setting).
     function resolveHoverText(el) {
-      // Explicit per-element text wins (data attribute or Elementor container setting).
       var explicit = el.closest('[data-bubble-cursor-text]');
       if (explicit) return explicit.getAttribute('data-bubble-cursor-text');
       var elementor = el.closest('[data-settings]');
@@ -170,35 +154,49 @@
       return null;
     }
 
-    if (hasFollower && (ring || dot)) {
-      document.addEventListener('mouseover', function (e) {
-        var target = e.target;
-        if (!target || !target.closest) return;
+    // Hit-test under the pointer once per frame; flip classes only on a real change.
+    function updateHover() {
+      if (!settings.hoverEffect) return;
+      if (mouseX === lastHitX && mouseY === lastHitY) return; // pointer hasn't moved
+      lastHitX = mouseX; lastHitY = mouseY;
 
-        var text = resolveHoverText(target);
-        var isHover = !!target.closest(settings.hoverSelector);
+      var desired = '', label = '';
+      var el = document.elementFromPoint(mouseX, mouseY);
+      if (el && el.closest) {
+        var text = resolveHoverText(el);
+        if (text && settings.hoverText !== false) { desired = 'text'; label = text; }
+        else if (el.closest(settings.hoverSelector)) { desired = 'hover'; }
+      }
+      if (desired === hoverState && label === hoverLabel) return; // no change → no DOM write
 
-        if (text && settings.hoverText !== false) {
-          root.classList.add('bc-hover', 'bc-hover-text');
-          if (ringLabel) ringLabel.textContent = text;
-        } else if (isHover) {
-          root.classList.add('bc-hover');
-          root.classList.remove('bc-hover-text');
-          if (ringLabel) ringLabel.textContent = '';
+      hoverState = desired;
+      hoverLabel = label;
+      root.classList.toggle('bc-hover', desired !== '');
+      root.classList.toggle('bc-hover-text', desired === 'text');
+      if (ringLabel) ringLabel.textContent = (desired === 'text') ? label : '';
+    }
+
+    function animate() {
+      ringX += (mouseX - ringX) * 0.18;
+      ringY += (mouseY - ringY) * 0.18;
+      if (ring) {
+        ring.style.transform = 'translate3d(' + ringX + 'px,' + ringY + 'px,0) translate(-50%,-50%)';
+      }
+      updateHover();
+      rafId = window.requestAnimationFrame(animate);
+    }
+
+    if (hasFollower) {
+      window.addEventListener('mousemove', onMove, { passive: true });
+      window.addEventListener('mouseout', function (e) {
+        if (!e.relatedTarget && !e.toElement) {
+          visible = false;
+          root.classList.remove('bc-visible');
         }
       });
-
-      document.addEventListener('mouseout', function (e) {
-        var target = e.target;
-        if (!target || !target.closest) return;
-        if (target.closest(settings.hoverSelector) || target.closest('[data-bubble-cursor-text]') || target.closest('[data-settings]')) {
-          // Only clear if we're actually leaving the interactive element.
-          var to = e.relatedTarget;
-          if (to && to.closest && (to.closest(settings.hoverSelector) || to.closest('[data-bubble-cursor-text]'))) return;
-          root.classList.remove('bc-hover', 'bc-hover-text');
-          if (ringLabel) ringLabel.textContent = '';
-        }
-      });
+      // Content can slide under a still pointer (smooth-scroll themes) — re-hit-test.
+      window.addEventListener('scroll', function () { lastHitX = null; }, { passive: true });
+      animate();
     }
 
     /* ---- Cleanup on unload --------------------------------------- */

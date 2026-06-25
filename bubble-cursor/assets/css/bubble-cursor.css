@@ -55,8 +55,10 @@ html.bc-active.bc-hide-native * {
   border: var(--bc-ring-border, 1.5px) solid var(--bc-ring-color, #fff);
   background: transparent;
   transform: translate3d(-100px, -100px, 0) translate(-50%, -50%);
-  transition: opacity 0.25s ease, width 0.25s ease, height 0.25s ease,
-    background-color 0.25s ease, border-color 0.25s ease;
+  transition: opacity 0.25s ease,
+    width 0.3s cubic-bezier(0.22, 0.61, 0.36, 1),
+    height 0.3s cubic-bezier(0.22, 0.61, 0.36, 1),
+    background-color 0.3s ease, border-color 0.3s ease;
 }
 
 /* The "View" label inside the ring. */
