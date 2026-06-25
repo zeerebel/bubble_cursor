@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bubble Cursor — Demo</title>
+  <link rel="stylesheet" href="../bubble-cursor/assets/css/bubble-cursor.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #050505;
+      color: #fff;
+      font-family: "Helvetica Neue", Arial, sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    .wrap { position: relative; z-index: 1; }
+    section {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 40px;
+    }
+    .ghost {
+      font-size: clamp(60px, 16vw, 240px);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: rgba(255,255,255,0.06);
+      line-height: 1;
+      margin-bottom: 10px;
+      user-select: none;
+    }
+    h1 {
+      font-size: clamp(34px, 6vw, 84px);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1.02;
+      margin-bottom: 18px;
+    }
+    p.lead { max-width: 540px; opacity: 0.65; font-size: 18px; line-height: 1.6; }
+    .row { margin-top: 36px; display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; }
+    .btn {
+      display: inline-block;
+      padding: 16px 34px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.25);
+      color: #fff;
+      text-decoration: none;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+    .btn.solid { background: #fff; color: #050505; border-color: #fff; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; max-width: 900px; width: 100%; margin-top: 30px; }
+    .card {
+      aspect-ratio: 4/3;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #161616, #0b0b0b);
+      border: 1px solid rgba(255,255,255,0.08);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; font-weight: 700; color: rgba(255,255,255,0.8);
+    }
+    .hint { position: fixed; bottom: 18px; left: 0; right: 0; text-align: center; font-size: 13px; opacity: 0.4; z-index: 2; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section>
+      <div class="ghost">SERVICES</div>
+      <h1>FULL-SERVICE<br>CREATIVE STUDIO</h1>
+      <p class="lead">We use the power of design to solve complex problems and cultivate business solutions. Move your mouse to paint the smoke.</p>
+      <div class="row">
+        <a class="btn solid" href="#work">View Work</a>
+        <a class="btn" href="#contact">Get in Touch</a>
+      </div>
+    </section>
+
+    <section id="work">
+      <h1>Selected Work</h1>
+      <p class="lead">Hover the cards — the ring expands and shows the label.</p>
+      <div class="cards">
+        <div class="card" data-bubble-cursor-text="View">Project 01</div>
+        <div class="card" data-bubble-cursor-text="Open">Project 02</div>
+        <div class="card" data-bubble-cursor-text="View">Project 03</div>
+        <div class="card" data-bubble-cursor-text="Open">Project 04</div>
+      </div>
+    </section>
+
+    <section id="contact">
+      <div class="ghost">HELLO</div>
+      <h1>Let's talk.</h1>
+      <div class="row">
+        <a class="btn solid" href="mailto:hi@example.com">Email Us</a>
+      </div>
+    </section>
+  </div>
+
+  <div class="hint">Bubble Cursor demo — no WordPress required. Move the mouse / hover the buttons.</div>
+
+  <!-- Optional: configure before loading the scripts -->
+  <script>
+    window.BubbleCursorSettings = {
+      enableFluid: true,
+      enableRing: true,
+      enableDot: true,
+      hideNativeCursor: false,
+      hoverText: 'View',
+      dotColor: '#ffffff',
+      ringColor: '#ffffff',
+      fluid: {
+        SPLAT_RADIUS: 0.25,
+        SPLAT_FORCE: 6000,
+        DENSITY_DISSIPATION: 0.98,
+        VELOCITY_DISSIPATION: 0.98,
+        COLORFUL: true,
+        BLOOM: true
+      }
+    };
+  </script>
+  <script src="../bubble-cursor/assets/js/fluid-cursor.js"></script>
+  <script src="../bubble-cursor/assets/js/bubble-cursor.js"></script>
+</body>
+</html>
