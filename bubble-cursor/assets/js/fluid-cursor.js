@@ -894,6 +894,24 @@
     this.splat(pointer.texcoordX, pointer.texcoordY, dx, dy, pointer.color);
   };
 
+  // Fire an outward puff of colour at a client (page) coordinate — used for the
+  // click-burst effect.
+  FluidSim.prototype.burstAt = function (clientX, clientY) {
+    if (this.contextLost || this.unsupported) return;
+    var rect = this.canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    var x = (clientX - rect.left) / rect.width;
+    var y = 1.0 - (clientY - rect.top) / rect.height;
+    var base = pickColor(this.config);
+    var color = { r: base.r * 7, g: base.g * 7, b: base.b * 7 }; // brighter than a trail splat
+    var n = 8;
+    var force = this.config.SPLAT_FORCE * 0.5;
+    for (var i = 0; i < n; i++) {
+      var ang = (i / n) * Math.PI * 2;
+      this.splat(x, y, Math.cos(ang) * force, Math.sin(ang) * force, color);
+    }
+  };
+
   FluidSim.prototype.applyInputs = function () {
     for (var i = 0; i < this.pointers.length; i++) {
       var p = this.pointers[i];
@@ -1161,6 +1179,7 @@
     stop: function () {
       if (instance) { instance.destroy(); instance = null; }
     },
+    burst: function (clientX, clientY) { if (instance) instance.burstAt(clientX, clientY); },
     isRunning: function () { return !!(instance && instance.running); }
   };
 })(window, document);

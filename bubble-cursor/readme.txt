@@ -4,7 +4,7 @@ Tags: cursor, custom cursor, fluid, webgl, smoke, mouse, elementor
 Requires at least: 5.6
 Tested up to: 6.8
 Requires PHP: 7.2
-Stable tag: 1.3.0
+Stable tag: 1.4.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,6 +63,12 @@ settings.
 That is intentional — a fluid mouse cursor has no meaning on touch screens.
 
 == Changelog ==
+
+= 1.4.0 =
+* New optional effects (all off by default): Magnetic buttons (the ring snaps
+  onto links/buttons), Click burst (a smoke puff + ring ripple on click), and
+  Elastic ring (squashes/stretches in the direction you move).
+* New Quick presets: one-click looks — Neon, Mono, Minimal, Smoke only.
 
 = 1.3.0 =
 * New "Hover text selector" setting: show the hover word (e.g. "View") on any

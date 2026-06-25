@@ -65,6 +65,9 @@
       smokeOpacity: num(s.smokeOpacity, 1),
       smokeBlend: s.smokeBlend || '',
       autoContrast: s.autoContrast !== undefined ? !!s.autoContrast : false,
+      magnetic: s.magnetic !== undefined ? !!s.magnetic : false,
+      clickBurst: s.clickBurst !== undefined ? !!s.clickBurst : false,
+      elastic: s.elastic !== undefined ? !!s.elastic : false,
       mixBlend: s.mixBlend || '',
       fluid: s.fluid || {}
     };
@@ -87,6 +90,7 @@
       settings.dotColor = '#ffffff';
       settings.ringColor = '#ffffff';
     }
+    if (settings.magnetic) root.classList.add('bc-magnetic');
 
     /* ---- Fluid (smoke) layer ------------------------------------- */
     if (settings.enableFluid && !reduced && window.BubbleCursorFluid) {
@@ -138,6 +142,7 @@
     var hoverState = '';        // '' | 'hover' | 'text'
     var hoverLabel = '';
     var lastHitX = null, lastHitY = null;
+    var magnetEl = null;        // element the ring is magnetised to (when enabled)
 
     function onMove(e) {
       mouseX = e.clientX;
@@ -177,13 +182,18 @@
       if (mouseX === lastHitX && mouseY === lastHitY) return; // pointer hasn't moved
       lastHitX = mouseX; lastHitY = mouseY;
 
-      var desired = '', label = '';
+      var desired = '', label = '', mEl = null;
       var el = document.elementFromPoint(mouseX, mouseY);
       if (el && el.closest) {
         var text = resolveHoverText(el);
         if (text && settings.hoverText !== false) { desired = 'text'; label = text; }
         else if (safeClosest(el, settings.hoverSelector)) { desired = 'hover'; }
+        if (settings.magnetic) mEl = safeClosest(el, settings.hoverSelector);
       }
+      // Update the magnet target every move (independent of the class state, so
+      // gliding from one button straight to another re-targets correctly).
+      if (settings.magnetic) magnetEl = mEl;
+
       if (desired === hoverState && label === hoverLabel) return; // no change → no DOM write
 
       hoverState = desired;
@@ -203,10 +213,30 @@
       // whether the page runs at 30, 60 or 144 fps (the smoke sim varies it),
       // so the motion stays smooth instead of stepping unevenly.
       var f = 1 - Math.pow(1 - settings.ringSpeed, dt / 16.667);
-      ringX += (mouseX - ringX) * f;
-      ringY += (mouseY - ringY) * f;
+
+      // Magnetic: aim at the hovered element's centre so the ring snaps onto it.
+      var tx = mouseX, ty = mouseY;
+      if (settings.magnetic && magnetEl) {
+        var mr = magnetEl.getBoundingClientRect();
+        if (mr.width && mr.height) { tx = mr.left + mr.width / 2; ty = mr.top + mr.height / 2; }
+      }
+
+      var gapX = tx - ringX, gapY = ty - ringY;
+      ringX += gapX * f;
+      ringY += gapY * f;
+
       if (ring) {
-        ring.style.transform = 'translate3d(' + ringX + 'px,' + ringY + 'px,0) translate(-50%,-50%)';
+        var tf = 'translate3d(' + ringX + 'px,' + ringY + 'px,0) translate(-50%,-50%)';
+        // Elastic squash/stretch along the direction of travel (idle ring only).
+        if (settings.elastic && hoverState === '' && !magnetEl) {
+          var speed = Math.sqrt(gapX * gapX + gapY * gapY);
+          var stretch = Math.min(speed * 0.012, 0.5);
+          if (stretch > 0.01) {
+            var ang = Math.atan2(gapY, gapX);
+            tf += ' rotate(' + ang + 'rad) scale(' + (1 + stretch).toFixed(3) + ',' + (1 - stretch * 0.4).toFixed(3) + ')';
+          }
+        }
+        ring.style.transform = tf;
       }
       updateHover();
       rafId = window.requestAnimationFrame(animate);
@@ -223,6 +253,27 @@
       // Content can slide under a still pointer (smooth-scroll themes) — re-hit-test.
       window.addEventListener('scroll', function () { lastHitX = null; }, { passive: true });
       animate();
+    }
+
+    /* ---- Click burst -------------------------------------------- */
+    if (settings.clickBurst) {
+      document.addEventListener('mousedown', function (e) {
+        // Smoke puff into the fluid (if it is running).
+        if (window.BubbleCursorFluid && window.BubbleCursorFluid.isRunning()) {
+          window.BubbleCursorFluid.burst(e.clientX, e.clientY);
+        }
+        // Expanding ring ripple at the click point.
+        var rip = document.createElement('div');
+        rip.className = 'bc-ripple';
+        rip.setAttribute('aria-hidden', 'true');
+        rip.style.left = e.clientX + 'px';
+        rip.style.top = e.clientY + 'px';
+        rip.style.borderColor = settings.ringColor;
+        document.body.appendChild(rip);
+        var remove = function () { if (rip.parentNode) rip.parentNode.removeChild(rip); };
+        rip.addEventListener('animationend', remove);
+        window.setTimeout(remove, 900); // fallback if animationend doesn't fire
+      }, { passive: true });
     }
 
     /* ---- Cleanup on unload --------------------------------------- */

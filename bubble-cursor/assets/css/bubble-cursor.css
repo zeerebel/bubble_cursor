@@ -120,6 +120,35 @@ html.bc-auto-contrast.bc-hover-text .bc-ring {
   mix-blend-mode: normal;
 }
 
+/* Magnetic: keep the dot visible while the ring snaps onto a target, so you can
+   still see the true pointer position inside the magnetised ring. */
+html.bc-magnetic.bc-hover .bc-dot {
+  opacity: var(--bc-opacity, 1);
+}
+
+/* Click burst: an expanding ring ripple at the click point (positioned via
+   inline left/top set by the JS; centred with the negative margin). */
+.bc-ripple {
+  position: fixed;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 2147483646;
+  opacity: 0.9;
+  transform: scale(0.2);
+  animation: bc-ripple-out 0.6s ease-out forwards;
+}
+
+@keyframes bc-ripple-out {
+  to {
+    transform: scale(6);
+    opacity: 0;
+  }
+}
+
 /* Respect users who ask for reduced motion: drop the heavy animation. */
 @media (prefers-reduced-motion: reduce) {
   .bc-fluid-canvas { display: none; }
