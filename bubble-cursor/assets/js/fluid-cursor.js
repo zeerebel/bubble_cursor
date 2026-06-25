@@ -27,6 +27,9 @@
     SHADING: true,
     COLORFUL: true,
     INTENSITY: 1,
+    COLOR_MODE: 'rainbow',
+    PALETTE: [],
+    SINGLE_COLOR: '#1e90ff',
     COLOR_UPDATE_SPEED: 10,
     PAUSED: false,
     BACK_COLOR: { r: 0, g: 0, b: 0 },
@@ -38,7 +41,9 @@
     BLOOM_THRESHOLD: 0.6,
     BLOOM_SOFT_KNEE: 0.7,
     SUNRAYS: false,
-    MAX_DPR: 2
+    MAX_DPR: 2,
+    PRESERVE_DRAWING_BUFFER: false,
+    ADAPTIVE: false
   };
 
   function FluidSim(canvas, userConfig) {
@@ -53,7 +58,7 @@
     this._raf = null;
     this._listeners = [];
 
-    var ctx = getWebGLContext(canvas);
+    var ctx = getWebGLContext(canvas, config.PRESERVE_DRAWING_BUFFER);
     if (!ctx) { this.unsupported = true; return; }
     this.gl = ctx.gl;
     this.ext = ctx.ext;
@@ -68,6 +73,9 @@
     this.lastColorTime = 0;
     this.colorUpdateTimer = 0;
     this.lastUpdate = now();
+    this._fpsAccum = 0;
+    this._fpsFrames = 0;
+    this._minQuality = false;
 
     this._initShaders();
     this._initBlit();
@@ -79,8 +87,8 @@
   /* ----------------------------------------------------------------- *
    * WebGL context + extensions
    * ----------------------------------------------------------------- */
-  function getWebGLContext(canvas) {
-    var params = { alpha: true, depth: false, stencil: false, antialias: false, preserveDrawingBuffer: false };
+  function getWebGLContext(canvas, preserve) {
+    var params = { alpha: true, depth: false, stencil: false, antialias: false, preserveDrawingBuffer: !!preserve };
     var gl = canvas.getContext('webgl2', params);
     var isWebGL2 = !!gl;
     if (!isWebGL2) {
@@ -890,6 +898,24 @@
     this.splat(pointer.texcoordX, pointer.texcoordY, dx, dy, pointer.color);
   };
 
+  // Fire an outward puff of colour at a client (page) coordinate — used for the
+  // click-burst effect.
+  FluidSim.prototype.burstAt = function (clientX, clientY) {
+    if (this.contextLost || this.unsupported) return;
+    var rect = this.canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    var x = (clientX - rect.left) / rect.width;
+    var y = 1.0 - (clientY - rect.top) / rect.height;
+    var base = pickColor(this.config);
+    var color = { r: base.r * 7, g: base.g * 7, b: base.b * 7 }; // brighter than a trail splat
+    var n = 8;
+    var force = this.config.SPLAT_FORCE * 0.5;
+    for (var i = 0; i < n; i++) {
+      var ang = (i / n) * Math.PI * 2;
+      this.splat(x, y, Math.cos(ang) * force, Math.sin(ang) * force, color);
+    }
+  };
+
   FluidSim.prototype.applyInputs = function () {
     for (var i = 0; i < this.pointers.length; i++) {
       var p = this.pointers[i];
@@ -943,6 +969,37 @@
     var c = HSVtoRGB(Math.random(), 1.0, 1.0);
     c.r *= mult; c.g *= mult; c.b *= mult;
     return c;
+  }
+
+  // Parse "#rgb" / "#rrggbb" to {r,g,b} in 0..1, or null if invalid.
+  function hexToRgb01(hex) {
+    if (typeof hex !== 'string') return null;
+    hex = hex.replace('#', '');
+    if (hex.length === 3) { hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2]; }
+    if (hex.length !== 6) return null;
+    var n = parseInt(hex, 16);
+    if (isNaN(n)) return null;
+    return { r: ((n >> 16) & 255) / 255, g: ((n >> 8) & 255) / 255, b: (n & 255) / 255 };
+  }
+
+  // Choose a splat colour according to the configured colour mode.
+  //  - rainbow: random hue (original behaviour)
+  //  - palette: a random colour from the user's PALETTE
+  //  - single:  the SINGLE_COLOR with a little random brightness for shade variation
+  function pickColor(config) {
+    var mult = (config.INTENSITY != null ? config.INTENSITY : 1) * 0.15;
+    var mode = config.COLOR_MODE || 'rainbow';
+    if (mode === 'palette' && config.PALETTE && config.PALETTE.length) {
+      var c = hexToRgb01(config.PALETTE[Math.floor(Math.random() * config.PALETTE.length)]);
+      if (c) { return { r: c.r * mult, g: c.g * mult, b: c.b * mult }; }
+    } else if (mode === 'single') {
+      var sc = hexToRgb01(config.SINGLE_COLOR || '#ffffff');
+      if (sc) {
+        var v = 0.6 + Math.random() * 0.8; // shade variation
+        return { r: sc.r * mult * v, g: sc.g * mult * v, b: sc.b * mult * v };
+      }
+    }
+    return generateColor(mult); // rainbow, or fallback when palette/single is unusable
   }
 
   function HSVtoRGB(h, s, v) {
@@ -1003,7 +1060,7 @@
       var posY = clientY - rect.top;
       if (!pointer.down) {
         pointer.down = true;
-        pointer.color = generateColor(self.config.INTENSITY * 0.15);
+        pointer.color = pickColor(self.config);
         pointer.prevTexcoordX = posX / self.canvas.clientWidth;
         pointer.prevTexcoordY = 1.0 - posY / self.canvas.clientHeight;
         pointer.texcoordX = pointer.prevTexcoordX;
@@ -1040,20 +1097,42 @@
   FluidSim.prototype.frame = function () {
     if (this.contextLost) return;
     var t = now();
-    var dt = Math.min((t - this.lastUpdate) / 1000, 0.016666);
+    var realMs = t - this.lastUpdate;
+    var dt = Math.min(realMs / 1000, 0.016666);
     this.lastUpdate = t;
+    if (this.config.ADAPTIVE && !this._minQuality) this._adapt(realMs);
 
     if (this.config.COLORFUL) {
       this.colorUpdateTimer += dt * this.config.COLOR_UPDATE_SPEED;
       if (this.colorUpdateTimer >= 1) {
         this.colorUpdateTimer = this.colorUpdateTimer % 1;
-        for (var i = 0; i < this.pointers.length; i++) this.pointers[i].color = generateColor(this.config.INTENSITY * 0.15);
+        for (var i = 0; i < this.pointers.length; i++) this.pointers[i].color = pickColor(this.config);
       }
     }
 
     this.applyInputs();
     if (!this.config.PAUSED) this.step(dt);
     this.render(null);
+  };
+
+  // Adaptive quality: if the real frame rate stays low, step the smoke quality
+  // down (dye resolution, then bloom) so heavy pages stay smooth. Monotonic —
+  // it only steps down, never oscillates, and ignores one-off stalls.
+  FluidSim.prototype._adapt = function (realMs) {
+    if (realMs > 100) { this._fpsAccum = 0; this._fpsFrames = 0; return; } // ignore stalls
+    this._fpsAccum += realMs;
+    this._fpsFrames++;
+    if (this._fpsAccum < 1000) return; // sample roughly once a second
+    var fps = this._fpsFrames * 1000 / this._fpsAccum;
+    this._fpsAccum = 0;
+    this._fpsFrames = 0;
+    if (fps >= 40) return; // healthy enough
+    var changed = false;
+    if (this.config.DYE_RESOLUTION > 540) { this.config.DYE_RESOLUTION = 512; changed = true; }
+    else if (this.config.BLOOM) { this.config.BLOOM = false; changed = true; }
+    else if (this.config.DYE_RESOLUTION > 280) { this.config.DYE_RESOLUTION = 256; changed = true; }
+    else { this._minQuality = true; }
+    if (changed) this.initFramebuffers();
   };
 
   FluidSim.prototype.start = function () {
@@ -1072,6 +1151,8 @@
       self._raf = window.requestAnimationFrame(loop);
     };
     this.lastUpdate = now();
+    this._fpsAccum = 0;
+    this._fpsFrames = 0;
     this._raf = window.requestAnimationFrame(loop);
   };
 
@@ -1126,6 +1207,9 @@
     stop: function () {
       if (instance) { instance.destroy(); instance = null; }
     },
+    burst: function (clientX, clientY) { if (instance) instance.burstAt(clientX, clientY); },
+    pause: function () { if (instance) instance.stop(); },
+    resume: function () { if (instance && !instance.running && !instance.unsupported && !instance.contextLost) instance.start(); },
     isRunning: function () { return !!(instance && instance.running); }
   };
 })(window, document);

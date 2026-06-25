@@ -3,7 +3,7 @@
  * Plugin Name:       Bubble Cursor — Smokey Fluid Cursor
  * Plugin URI:        https://github.com/zeerebel/bubble_cursor
  * Description:       Adds a colourful WebGL "smoke" fluid trail plus a dot + ring custom cursor with a "View" hover bubble — a replica of the TreeThemes "Deep" theme cursor. Works on any theme (Elementor or not). No coding required.
- * Version:           1.1.0
+ * Version:           1.5.1
  * Requires at least: 5.6
  * Requires PHP:      7.2
  * Author:            zeerebel
@@ -20,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // No direct access.
 }
 
-define( 'BUBBLE_CURSOR_VERSION', '1.1.0' );
+define( 'BUBBLE_CURSOR_VERSION', '1.5.1' );
 define( 'BUBBLE_CURSOR_FILE', __FILE__ );
 define( 'BUBBLE_CURSOR_URL', plugin_dir_url( __FILE__ ) );
 define( 'BUBBLE_CURSOR_PATH', plugin_dir_path( __FILE__ ) );
@@ -74,14 +74,39 @@ final class Bubble_Cursor {
 			'dot_color'             => '#ffffff',
 			'ring_color'            => '#ffffff',
 			'hover_text'            => 'View',
+			'hover_effect'          => 1,
 			'hover_selector'        => 'a[href], button:not(:disabled), input[type="submit"], input[type="button"], .elementor-button, [data-bubble-cursor-hover]',
+			'hover_text_selector'   => '',
 			// Shape & transparency.
 			'dot_size'              => 8,
 			'ring_size'             => 40,
+			'ring_speed'            => 0.2,
 			'ring_border'           => 1.5,
 			'cursor_opacity'        => 1,
 			'smoke_opacity'         => 1,
 			'smoke_blend'           => '',
+			'auto_contrast'         => 0,
+			// Extra effects (all opt-in).
+			'magnetic'              => 0,
+			'click_burst'           => 0,
+			'elastic'               => 0,
+			'image_preview'         => 0,
+			'preview_selector'      => '',
+			'preview_size'          => 180,
+			'adaptive'              => 0,
+			// Colour mode: rainbow (random) | palette (your colours) | single (one colour + shades).
+			'color_mode'            => 'rainbow',
+			'single_color'          => '#1e90ff',
+			'pal_color_1'           => '#1e90ff',
+			'pal_on_1'              => 1,
+			'pal_color_2'           => '#8a2be2',
+			'pal_on_2'              => 1,
+			'pal_color_3'           => '#00e5ff',
+			'pal_on_3'              => 1,
+			'pal_color_4'           => '#ff3366',
+			'pal_on_4'              => 0,
+			'pal_color_5'           => '#ffd166',
+			'pal_on_5'              => 0,
 			// Smoke physics / intensity.
 			'colorful'              => 1,
 			'bloom'                 => 1,
@@ -97,12 +122,86 @@ final class Bubble_Cursor {
 	}
 
 	/**
+	 * Quick-look presets — name => option overrides applied (once) on save.
+	 *
+	 * @return array
+	 */
+	private static function presets() {
+		return array(
+			'neon'    => array(
+				'enable_fluid' => 1,
+				'color_mode'   => 'palette',
+				'pal_color_1'  => '#39ff14',
+				'pal_on_1'     => 1,
+				'pal_color_2'  => '#ff00d4',
+				'pal_on_2'     => 1,
+				'pal_color_3'  => '#00e5ff',
+				'pal_on_3'     => 1,
+				'pal_on_4'     => 0,
+				'pal_on_5'     => 0,
+				'bloom'        => 1,
+				'bloom_intensity' => 1.3,
+				'intensity'    => 1.5,
+				'dot_color'    => '#ffffff',
+				'ring_color'   => '#ffffff',
+				'auto_contrast' => 0,
+			),
+			'mono'    => array(
+				'enable_fluid' => 1,
+				'color_mode'   => 'single',
+				'single_color' => '#ffffff',
+				'bloom'        => 0,
+				'intensity'    => 1,
+				'smoke_opacity' => 0.5,
+				'auto_contrast' => 1,
+			),
+			'minimal' => array(
+				'enable_fluid' => 0,
+				'enable_ring'  => 1,
+				'enable_dot'   => 1,
+				'ring_size'    => 30,
+				'dot_size'     => 6,
+				'hover_text'   => '',
+				'auto_contrast' => 1,
+				'magnetic'     => 1,
+			),
+			'smoke'   => array(
+				'enable_fluid' => 1,
+				'enable_ring'  => 0,
+				'enable_dot'   => 0,
+				'color_mode'   => 'rainbow',
+				'bloom'        => 1,
+			),
+		);
+	}
+
+	/**
 	 * Allowed CSS mix-blend-mode values for the smoke canvas.
 	 *
 	 * @return array
 	 */
 	private static function blend_modes() {
 		return array( '', 'screen', 'lighten', 'overlay', 'difference', 'color-dodge', 'hard-light', 'soft-light' );
+	}
+
+	/**
+	 * Collect the enabled, valid palette colours (up to 5) as a list of hex strings.
+	 *
+	 * @param array $o Options.
+	 * @return array
+	 */
+	private static function palette_from_options( $o ) {
+		$out = array();
+		for ( $i = 1; $i <= 5; $i++ ) {
+			if ( empty( $o[ 'pal_on_' . $i ] ) ) {
+				continue;
+			}
+			$hex = isset( $o[ 'pal_color_' . $i ] ) ? $o[ 'pal_color_' . $i ] : '';
+			if ( preg_match( '/^#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6})$/', $hex ) ) {
+				$out[] = $hex;
+			}
+		}
+		return $out;
 	}
 
 	/**
@@ -229,14 +328,24 @@ final class Bubble_Cursor {
 				'hideOnTouch'      => (bool) $o['hide_on_touch'],
 				'dotColor'         => $o['dot_color'],
 				'ringColor'        => $o['ring_color'],
-				'hoverText'        => '' === $o['hover_text'] ? false : $o['hover_text'],
-				'hoverSelector'    => $o['hover_selector'],
+				'hoverText'         => '' === $o['hover_text'] ? false : $o['hover_text'],
+				'hoverEffect'       => (bool) $o['hover_effect'],
+				'hoverSelector'     => $o['hover_selector'],
+				'hoverTextSelector' => $o['hover_text_selector'],
 				'dotSize'          => (float) $o['dot_size'],
 				'ringSize'         => (float) $o['ring_size'],
+				'ringSpeed'        => (float) $o['ring_speed'],
 				'ringBorder'       => (float) $o['ring_border'],
 				'cursorOpacity'    => (float) $o['cursor_opacity'],
 				'smokeOpacity'     => (float) $o['smoke_opacity'],
 				'smokeBlend'       => $o['smoke_blend'],
+				'autoContrast'     => (bool) $o['auto_contrast'],
+				'magnetic'         => (bool) $o['magnetic'],
+				'clickBurst'       => (bool) $o['click_burst'],
+				'elastic'          => (bool) $o['elastic'],
+				'imagePreview'     => (bool) $o['image_preview'],
+				'previewSelector'  => $o['preview_selector'],
+				'previewSize'      => (float) $o['preview_size'],
 				'fluid'            => array(
 					'SPLAT_FORCE'          => (float) $o['splat_force'],
 					'SPLAT_RADIUS'         => (float) $o['splat_radius'],
@@ -248,6 +357,10 @@ final class Bubble_Cursor {
 					'DYE_RESOLUTION'       => self::quality_to_dye( $o['quality'] ),
 					'COLORFUL'             => (bool) $o['colorful'],
 					'BLOOM'                => (bool) $o['bloom'],
+					'COLOR_MODE'           => $o['color_mode'],
+					'PALETTE'              => self::palette_from_options( $o ),
+					'SINGLE_COLOR'         => $o['single_color'],
+					'ADAPTIVE'             => (bool) $o['adaptive'],
 				),
 			),
 			$o
@@ -305,6 +418,12 @@ final class Bubble_Cursor {
 		$out['hide_on_touch'] = empty( $input['hide_on_touch'] ) ? 0 : 1;
 		$out['colorful']      = empty( $input['colorful'] ) ? 0 : 1;
 		$out['bloom']         = empty( $input['bloom'] ) ? 0 : 1;
+		$out['hover_effect']  = empty( $input['hover_effect'] ) ? 0 : 1;
+		$out['magnetic']      = empty( $input['magnetic'] ) ? 0 : 1;
+		$out['click_burst']   = empty( $input['click_burst'] ) ? 0 : 1;
+		$out['elastic']       = empty( $input['elastic'] ) ? 0 : 1;
+		$out['image_preview'] = empty( $input['image_preview'] ) ? 0 : 1;
+		$out['adaptive']      = empty( $input['adaptive'] ) ? 0 : 1;
 
 		$scope         = isset( $input['scope'] ) ? $input['scope'] : $d['scope'];
 		$out['scope']  = in_array( $scope, array( 'all', 'front' ), true ) ? $scope : $d['scope'];
@@ -318,6 +437,11 @@ final class Bubble_Cursor {
 			$out['hover_selector'] = $d['hover_selector'];
 		}
 
+		// Empty is allowed here (means "off").
+		$out['hover_text_selector'] = isset( $input['hover_text_selector'] ) ? sanitize_text_field( $input['hover_text_selector'] ) : $d['hover_text_selector'];
+		$out['preview_selector']    = isset( $input['preview_selector'] ) ? sanitize_text_field( $input['preview_selector'] ) : $d['preview_selector'];
+		$out['preview_size']        = $this->clamp_float( $input, 'preview_size', $d, 60, 420 );
+
 		$out['splat_force']          = $this->clamp_float( $input, 'splat_force', $d, 100, 20000 );
 		$out['splat_radius']         = $this->clamp_float( $input, 'splat_radius', $d, 0.01, 1 );
 		$out['density_dissipation']  = $this->clamp_float( $input, 'density_dissipation', $d, 0.5, 4 );
@@ -326,6 +450,7 @@ final class Bubble_Cursor {
 		// Shape & transparency.
 		$out['dot_size']       = $this->clamp_float( $input, 'dot_size', $d, 2, 40 );
 		$out['ring_size']      = $this->clamp_float( $input, 'ring_size', $d, 10, 120 );
+		$out['ring_speed']     = $this->clamp_float( $input, 'ring_speed', $d, 0.05, 0.6 );
 		$out['ring_border']    = $this->clamp_float( $input, 'ring_border', $d, 0, 8 );
 		$out['cursor_opacity'] = $this->clamp_float( $input, 'cursor_opacity', $d, 0.1, 1 );
 		$out['smoke_opacity']  = $this->clamp_float( $input, 'smoke_opacity', $d, 0.1, 1 );
@@ -340,6 +465,30 @@ final class Bubble_Cursor {
 
 		$blend              = isset( $input['smoke_blend'] ) ? $input['smoke_blend'] : $d['smoke_blend'];
 		$out['smoke_blend'] = in_array( $blend, self::blend_modes(), true ) ? $blend : $d['smoke_blend'];
+
+		// Colour mode + palette + auto-contrast.
+		$out['auto_contrast'] = empty( $input['auto_contrast'] ) ? 0 : 1;
+
+		$mode                = isset( $input['color_mode'] ) ? $input['color_mode'] : $d['color_mode'];
+		$out['color_mode']   = in_array( $mode, array( 'rainbow', 'palette', 'single' ), true ) ? $mode : $d['color_mode'];
+		$out['single_color'] = $this->sanitize_color( isset( $input['single_color'] ) ? $input['single_color'] : $d['single_color'], $d['single_color'] );
+
+		for ( $i = 1; $i <= 5; $i++ ) {
+			$ck           = 'pal_color_' . $i;
+			$ok           = 'pal_on_' . $i;
+			$out[ $ck ]   = $this->sanitize_color( isset( $input[ $ck ] ) ? $input[ $ck ] : $d[ $ck ], $d[ $ck ] );
+			$out[ $ok ]   = empty( $input[ $ok ] ) ? 0 : 1;
+		}
+
+		// A chosen preset overrides the relevant fields once (it is not stored,
+		// so the dropdown returns to "—" and every value stays editable after).
+		$presets = self::presets();
+		$preset  = isset( $input['apply_preset'] ) ? $input['apply_preset'] : '';
+		if ( isset( $presets[ $preset ] ) ) {
+			foreach ( $presets[ $preset ] as $k => $v ) {
+				$out[ $k ] = $v;
+			}
+		}
 
 		return $out;
 	}
@@ -394,6 +543,24 @@ final class Bubble_Cursor {
 					</tr>
 				</table>
 
+				<h2 class="title"><?php esc_html_e( 'Quick presets', 'bubble-cursor' ); ?></h2>
+				<table class="form-table" role="presentation">
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Apply a preset', 'bubble-cursor' ); ?></th>
+						<td>
+							<select name="<?php echo esc_attr( $n ); ?>[apply_preset]" id="bc-apply-preset" autocomplete="off">
+								<option value="">&mdash; <?php esc_html_e( 'choose a look, then Save', 'bubble-cursor' ); ?> &mdash;</option>
+								<option value="neon"><?php esc_html_e( 'Neon (bright palette + glow)', 'bubble-cursor' ); ?></option>
+								<option value="mono"><?php esc_html_e( 'Mono (white smoke, adapts to background)', 'bubble-cursor' ); ?></option>
+								<option value="minimal"><?php esc_html_e( 'Minimal (no smoke, magnetic dot + ring)', 'bubble-cursor' ); ?></option>
+								<option value="smoke"><?php esc_html_e( 'Smoke only (no dot / ring)', 'bubble-cursor' ); ?></option>
+							</select>
+							<p class="description"><?php esc_html_e( 'Pick a preset and click Save Changes to apply it. It overwrites the related options below, which you can then fine-tune. The dropdown resets after saving.', 'bubble-cursor' ); ?></p>
+							<script>document.addEventListener('DOMContentLoaded',function(){var s=document.getElementById('bc-apply-preset');if(s){s.selectedIndex=0;}});</script>
+						</td>
+					</tr>
+				</table>
+
 				<h2 class="title"><?php esc_html_e( 'Layers', 'bubble-cursor' ); ?></h2>
 				<table class="form-table" role="presentation">
 					<tr>
@@ -425,10 +592,25 @@ final class Bubble_Cursor {
 						<td><input type="text" class="regular-text" name="<?php echo esc_attr( $n ); ?>[ring_color]" value="<?php echo esc_attr( $o['ring_color'] ); ?>" placeholder="#ffffff"></td>
 					</tr>
 					<tr>
+						<th scope="row"><?php esc_html_e( 'Adapt to background', 'bubble-cursor' ); ?></th>
+						<td><label><input type="checkbox" name="<?php echo esc_attr( $n ); ?>[auto_contrast]" value="1" <?php checked( $o['auto_contrast'], 1 ); ?>> <?php esc_html_e( 'Auto-invert the dot + ring so they stay visible on light AND dark sections (uses white + "difference" blending; overrides the dot/ring colours above).', 'bubble-cursor' ); ?></label></td>
+					</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Ring hover effect', 'bubble-cursor' ); ?></th>
+						<td><label><input type="checkbox" name="<?php echo esc_attr( $n ); ?>[hover_effect]" value="1" <?php checked( $o['hover_effect'], 1 ); ?>> <?php esc_html_e( 'Grow the ring (and show the hover word) over links/buttons. Turn off for a constant-size ring with no pulsing.', 'bubble-cursor' ); ?></label></td>
+					</tr>
+					<tr>
 						<th scope="row"><?php esc_html_e( 'Hover text', 'bubble-cursor' ); ?></th>
 						<td>
 							<input type="text" class="regular-text" name="<?php echo esc_attr( $n ); ?>[hover_text]" value="<?php echo esc_attr( $o['hover_text'] ); ?>" placeholder="View">
 							<p class="description"><?php esc_html_e( 'Word shown inside the ring when hovering elements that carry a hover label. Leave blank to disable. Add data-bubble-cursor-text="Open" to any element to override per-element. Elementor containers using the "Cursor Hover Effect Text" setting are detected automatically.', 'bubble-cursor' ); ?></p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Hover text selector', 'bubble-cursor' ); ?></th>
+						<td>
+							<input type="text" class="large-text code" name="<?php echo esc_attr( $n ); ?>[hover_text_selector]" value="<?php echo esc_attr( $o['hover_text_selector'] ); ?>" placeholder=".qodef-e-media-image, .portfolio-item">
+							<p class="description"><?php esc_html_e( 'Show the hover word (above) on any element matching this CSS selector — e.g. .qodef-e-media-image for elements with class="qodef-e-media-image". Comma-separate several. Use a leading dot for a class, # for an id. Leave blank for none.', 'bubble-cursor' ); ?></p>
 						</td>
 					</tr>
 					<tr>
@@ -451,12 +633,82 @@ final class Bubble_Cursor {
 						<td><input type="number" step="1" min="10" max="120" name="<?php echo esc_attr( $n ); ?>[ring_size]" value="<?php echo esc_attr( $o['ring_size'] ); ?>"> <span class="description"><?php esc_html_e( 'px (default 40)', 'bubble-cursor' ); ?></span></td>
 					</tr>
 					<tr>
+						<th scope="row"><?php esc_html_e( 'Ring follow speed', 'bubble-cursor' ); ?></th>
+						<td><input type="number" step="0.01" min="0.05" max="0.6" name="<?php echo esc_attr( $n ); ?>[ring_speed]" value="<?php echo esc_attr( $o['ring_speed'] ); ?>"> <span class="description"><?php esc_html_e( 'How tightly the ring tracks the pointer. Higher = snappier (less lag); lower = smoother trailing. Default 0.2.', 'bubble-cursor' ); ?></span></td>
+					</tr>
+					<tr>
 						<th scope="row"><?php esc_html_e( 'Ring thickness', 'bubble-cursor' ); ?></th>
 						<td><input type="number" step="0.5" min="0" max="8" name="<?php echo esc_attr( $n ); ?>[ring_border]" value="<?php echo esc_attr( $o['ring_border'] ); ?>"> <span class="description"><?php esc_html_e( 'px border (default 1.5)', 'bubble-cursor' ); ?></span></td>
 					</tr>
 					<tr>
 						<th scope="row"><?php esc_html_e( 'Cursor opacity', 'bubble-cursor' ); ?></th>
 						<td><input type="number" step="0.05" min="0.1" max="1" name="<?php echo esc_attr( $n ); ?>[cursor_opacity]" value="<?php echo esc_attr( $o['cursor_opacity'] ); ?>"> <span class="description"><?php esc_html_e( 'Transparency of the dot + ring, 0.1–1 (default 1).', 'bubble-cursor' ); ?></span></td>
+					</tr>
+				</table>
+
+				<h2 class="title"><?php esc_html_e( 'Extra effects', 'bubble-cursor' ); ?></h2>
+				<table class="form-table" role="presentation">
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Magnetic buttons', 'bubble-cursor' ); ?></th>
+						<td><label><input type="checkbox" name="<?php echo esc_attr( $n ); ?>[magnetic]" value="1" <?php checked( $o['magnetic'], 1 ); ?>> <?php esc_html_e( 'The ring snaps onto links/buttons as you hover them (uses the Hover selector).', 'bubble-cursor' ); ?></label></td>
+					</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Click burst', 'bubble-cursor' ); ?></th>
+						<td><label><input type="checkbox" name="<?php echo esc_attr( $n ); ?>[click_burst]" value="1" <?php checked( $o['click_burst'], 1 ); ?>> <?php esc_html_e( 'Clicking fires a colourful smoke puff plus an expanding ring ripple.', 'bubble-cursor' ); ?></label></td>
+					</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Elastic ring', 'bubble-cursor' ); ?></th>
+						<td><label><input type="checkbox" name="<?php echo esc_attr( $n ); ?>[elastic]" value="1" <?php checked( $o['elastic'], 1 ); ?>> <?php esc_html_e( 'The ring squashes/stretches in the direction you move, like it has weight.', 'bubble-cursor' ); ?></label></td>
+					</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Image preview', 'bubble-cursor' ); ?></th>
+						<td><label><input type="checkbox" name="<?php echo esc_attr( $n ); ?>[image_preview]" value="1" <?php checked( $o['image_preview'], 1 ); ?>> <?php esc_html_e( "Show the item's image following the cursor when hovering the elements set below.", 'bubble-cursor' ); ?></label></td>
+					</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Preview selector', 'bubble-cursor' ); ?></th>
+						<td>
+							<input type="text" class="large-text code" name="<?php echo esc_attr( $n ); ?>[preview_selector]" value="<?php echo esc_attr( $o['preview_selector'] ); ?>" placeholder=".qodef-e-media-image, .portfolio-item">
+							<p class="description"><?php esc_html_e( 'CSS selector for items that show an image preview. The image is taken from a data-bubble-cursor-image="URL" attribute, an img inside the item, or the item background image.', 'bubble-cursor' ); ?></p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Preview size', 'bubble-cursor' ); ?></th>
+						<td><input type="number" step="10" min="60" max="420" name="<?php echo esc_attr( $n ); ?>[preview_size]" value="<?php echo esc_attr( $o['preview_size'] ); ?>"> <span class="description"><?php esc_html_e( 'px (default 180)', 'bubble-cursor' ); ?></span></td>
+					</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Adaptive performance', 'bubble-cursor' ); ?></th>
+						<td><label><input type="checkbox" name="<?php echo esc_attr( $n ); ?>[adaptive]" value="1" <?php checked( $o['adaptive'], 1 ); ?>> <?php esc_html_e( 'Automatically lower the smoke quality if the frame rate drops, to keep heavy pages smooth. (The smoke also pauses in background tabs automatically.)', 'bubble-cursor' ); ?></label></td>
+					</tr>
+				</table>
+
+				<h2 class="title"><?php esc_html_e( 'Smoke colours', 'bubble-cursor' ); ?></h2>
+				<table class="form-table" role="presentation">
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Colour mode', 'bubble-cursor' ); ?></th>
+						<td>
+							<select name="<?php echo esc_attr( $n ); ?>[color_mode]">
+								<option value="rainbow" <?php selected( $o['color_mode'], 'rainbow' ); ?>><?php esc_html_e( 'Rainbow (random colours)', 'bubble-cursor' ); ?></option>
+								<option value="palette" <?php selected( $o['color_mode'], 'palette' ); ?>><?php esc_html_e( 'Palette (colours I pick)', 'bubble-cursor' ); ?></option>
+								<option value="single" <?php selected( $o['color_mode'], 'single' ); ?>><?php esc_html_e( 'Single colour (+ auto shades)', 'bubble-cursor' ); ?></option>
+							</select>
+							<p class="description"><?php esc_html_e( 'Rainbow = the original random colours. Palette = only the colours you enable below. Single = one colour with automatic shade variation.', 'bubble-cursor' ); ?></p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Single colour', 'bubble-cursor' ); ?></th>
+						<td><input type="color" name="<?php echo esc_attr( $n ); ?>[single_color]" value="<?php echo esc_attr( $o['single_color'] ); ?>"> <span class="description"><?php esc_html_e( 'Used when Colour mode is "Single".', 'bubble-cursor' ); ?></span></td>
+					</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Palette colours', 'bubble-cursor' ); ?></th>
+						<td>
+							<?php for ( $i = 1; $i <= 5; $i++ ) : ?>
+								<label style="display:inline-flex;align-items:center;gap:6px;margin:0 14px 8px 0;">
+									<input type="checkbox" name="<?php echo esc_attr( $n ); ?>[pal_on_<?php echo (int) $i; ?>]" value="1" <?php checked( $o[ 'pal_on_' . $i ], 1 ); ?>>
+									<input type="color" name="<?php echo esc_attr( $n ); ?>[pal_color_<?php echo (int) $i; ?>]" value="<?php echo esc_attr( $o[ 'pal_color_' . $i ] ); ?>">
+								</label>
+							<?php endfor; ?>
+							<p class="description"><?php esc_html_e( 'Tick a colour to include it. Add a few shades of one colour, or your brand colours. Used when Colour mode is "Palette".', 'bubble-cursor' ); ?></p>
+						</td>
 					</tr>
 				</table>
 

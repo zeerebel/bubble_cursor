@@ -55,8 +55,10 @@ html.bc-active.bc-hide-native * {
   border: var(--bc-ring-border, 1.5px) solid var(--bc-ring-color, #fff);
   background: transparent;
   transform: translate3d(-100px, -100px, 0) translate(-50%, -50%);
-  transition: opacity 0.25s ease, width 0.25s ease, height 0.25s ease,
-    background-color 0.25s ease, border-color 0.25s ease;
+  transition: opacity 0.25s ease,
+    width 0.3s cubic-bezier(0.22, 0.61, 0.36, 1),
+    height 0.3s cubic-bezier(0.22, 0.61, 0.36, 1),
+    background-color 0.3s ease, border-color 0.3s ease;
 }
 
 /* The "View" label inside the ring. */
@@ -104,6 +106,71 @@ html.bc-hover-text .bc-ring {
 html.bc-hover-text .bc-ring__label {
   opacity: 1;
   transform: scale(1);
+}
+
+/* Auto-contrast: invert the dot + ring against whatever is behind them so the
+   cursor stays visible on both light and dark backgrounds. */
+html.bc-auto-contrast .bc-dot,
+html.bc-auto-contrast .bc-ring {
+  mix-blend-mode: difference;
+}
+
+/* Keep the filled "View" bubble readable — don't invert its text. */
+html.bc-auto-contrast.bc-hover-text .bc-ring {
+  mix-blend-mode: normal;
+}
+
+/* Magnetic: keep the dot visible while the ring snaps onto a target, so you can
+   still see the true pointer position inside the magnetised ring. */
+html.bc-magnetic.bc-hover .bc-dot {
+  opacity: var(--bc-opacity, 1);
+}
+
+/* Image preview that follows the cursor over portfolio/image items.
+   The JS writes `transform` every frame for the follow, so only `opacity` is
+   transitioned here — transitioning transform too would make it rubber-band. */
+.bc-preview {
+  position: fixed;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 2147483645;
+  border-radius: 10px;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  transform: translate3d(-400px, -400px, 0) translate(-50%, -50%);
+  transition: opacity 0.28s ease;
+  will-change: transform, opacity;
+}
+
+html.bc-preview-on .bc-preview {
+  opacity: 1;
+}
+
+/* Click burst: an expanding ring ripple at the click point (positioned via
+   inline left/top set by the JS; centred with the negative margin). */
+.bc-ripple {
+  position: fixed;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 2147483646;
+  opacity: 0.9;
+  transform: scale(0.2);
+  animation: bc-ripple-out 0.6s ease-out forwards;
+}
+
+@keyframes bc-ripple-out {
+  to {
+    transform: scale(6);
+    opacity: 0;
+  }
 }
 
 /* Respect users who ask for reduced motion: drop the heavy animation. */

@@ -4,7 +4,7 @@ Tags: cursor, custom cursor, fluid, webgl, smoke, mouse, elementor
 Requires at least: 5.6
 Tested up to: 6.8
 Requires PHP: 7.2
-Stable tag: 1.1.0
+Stable tag: 1.5.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -49,7 +49,10 @@ No. It runs on any theme. Elementor "Cursor Hover Effect Text" settings are
 picked up automatically when present.
 
 = How do I show custom hover text on a specific element? =
-Add `data-bubble-cursor-text="Open"` (or any word) to the element.
+Either add `data-bubble-cursor-text="Open"` (or any word) to the element, or —
+if you can't edit the markup — put a CSS selector for it in the "Hover text
+selector" setting (e.g. `.qodef-e-media-image`) and it will show the global
+hover word.
 
 = How do I make an element trigger the enlarged ring? =
 It already triggers on links and buttons. For anything else, add
@@ -60,6 +63,50 @@ settings.
 That is intentional — a fluid mouse cursor has no meaning on touch screens.
 
 == Changelog ==
+
+= 1.5.1 =
+* Fixed: the Quick-preset dropdown could be restored by the browser and silently re-apply the preset on a later save, overwriting your manual tweaks. The dropdown now reliably resets to "choose a look" after saving.
+
+= 1.5.0 =
+* New "Image preview" effect: the hovered item's image follows the cursor (the
+  agency portfolio peek). Pulls from a data-bubble-cursor-image attribute, an
+  img inside the item, or its background image.
+* New "Adaptive performance": auto-lowers smoke quality if the frame rate drops,
+  and pauses the smoke entirely in background tabs (saves CPU/battery).
+* Magnetic now hugs the element's shape/size (not just its centre).
+
+= 1.4.0 =
+* New optional effects (all off by default): Magnetic buttons (the ring snaps
+  onto links/buttons), Click burst (a smoke puff + ring ripple on click), and
+  Elastic ring (squashes/stretches in the direction you move).
+* New Quick presets: one-click looks — Neon, Mono, Minimal, Smoke only.
+
+= 1.3.0 =
+* New "Hover text selector" setting: show the hover word (e.g. "View") on any
+  elements you target with a CSS selector — no need to edit theme markup. Great
+  for portfolio/image items from themes that don't use the data attribute.
+* Hardened selector matching so a typo in any selector field can't cause errors.
+
+= 1.2.2 =
+* Smoother ring motion: the follow easing is now frame-rate independent, so the
+  ring glides consistently even when the smoke simulation makes the page's frame
+  rate dip or vary. Added a "Ring follow speed" control (snappier vs. smoother).
+
+= 1.2.1 =
+* Fixed the ring "pulsing/rippling" as the pointer crossed nested elements
+  (common on Elementor pages). Hover is now hit-tested once per frame and only
+  changes when it really changes, so the ring transitions smoothly instead of
+  throbbing.
+* New "Ring hover effect" toggle to turn the grow/word effect off entirely for
+  a constant-size ring.
+
+= 1.2.0 =
+* Smoke colours: choose a colour mode — Rainbow (random, the original),
+  Palette (pick up to 5 of your own colours/shades), or Single (one colour with
+  automatic shade variation).
+* "Adapt to background": auto-invert the dot + ring so the cursor stays visible
+  on both light and dark sections (uses white + "difference" blending).
+* Added an optional preserve-drawing-buffer flag for the fluid canvas.
 
 = 1.1.0 =
 * New controls: dot/ring size, ring thickness, cursor opacity, smoke opacity,

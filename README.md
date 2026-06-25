@@ -54,12 +54,22 @@ You can also just copy the `bubble-cursor` folder into
 * Toggle each layer independently: smoke, ring, dot, and whether to hide the
   native OS cursor (the Deep demo keeps it visible — that's the default).
 * Dot / ring colours, the hover word (default **View**), and the hover selector.
+* **Smoke colours:** choose a colour mode — **Rainbow** (random, the original),
+  **Palette** (pick up to 5 of your own colours/shades), or **Single** (one
+  colour with automatic shade variation).
+* **Adapt to background:** auto-invert the dot + ring so the cursor stays visible
+  on both light and dark sections (white + "difference" blending).
 * **Shape, size & transparency:** dot size, ring size, ring thickness, cursor
   opacity, and smoke opacity.
 * **Smoke physics & intensity:** colourful on/off, bloom glow + intensity,
   smoke intensity/brightness, swirl, splat force, splat radius, density /
   velocity fade, a **Low / Medium / High** quality preset, and a blend mode
   (e.g. *screen* / *lighten* to keep text readable).
+* **Extra effects (all opt-in):** magnetic ring that hugs buttons, click burst
+  (smoke puff + ripple), elastic ring, **image preview** (a portfolio item's
+  image follows the cursor), and **adaptive performance** (auto-eases quality
+  on slow frames + pauses in background tabs).
+* **Quick presets:** one-click looks — Neon, Mono, Minimal, Smoke only.
 
 ### Won't crash your site
 
@@ -105,6 +115,15 @@ php -S 127.0.0.1:8765
 * **No WebGL:** the smoke silently does nothing; the dot/ring still work.
 * **Performance:** the simulation runs at a capped device-pixel-ratio and pauses
   cleanly on page unload.
+
+## Development, testing & releasing
+
+* **`HANDOFF.md`** — full architecture, data flow, feature/option map, and a
+  distribution checklist (GitHub / WordPress.org / selling). Start here to
+  continue the project.
+* **`tests/`** — run `php tests/php/bridge-test.php` and
+  `php tests/php/render-test.php` (no browser needed), plus a headless-Chromium
+  front-end suite. See `tests/README.md`.
 
 ## Credits & license
 
