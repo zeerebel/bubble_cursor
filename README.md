@@ -54,6 +54,11 @@ You can also just copy the `bubble-cursor` folder into
 * Toggle each layer independently: smoke, ring, dot, and whether to hide the
   native OS cursor (the Deep demo keeps it visible — that's the default).
 * Dot / ring colours, the hover word (default **View**), and the hover selector.
+* **Smoke colours:** choose a colour mode — **Rainbow** (random, the original),
+  **Palette** (pick up to 5 of your own colours/shades), or **Single** (one
+  colour with automatic shade variation).
+* **Adapt to background:** auto-invert the dot + ring so the cursor stays visible
+  on both light and dark sections (white + "difference" blending).
 * **Shape, size & transparency:** dot size, ring size, ring thickness, cursor
   opacity, and smoke opacity.
 * **Smoke physics & intensity:** colourful on/off, bloom glow + intensity,

@@ -50,6 +50,7 @@
       cursorOpacity: num(s.cursorOpacity, 1),
       smokeOpacity: num(s.smokeOpacity, 1),
       smokeBlend: s.smokeBlend || '',
+      autoContrast: s.autoContrast !== undefined ? !!s.autoContrast : false,
       mixBlend: s.mixBlend || '',
       fluid: s.fluid || {}
     };
@@ -63,6 +64,15 @@
     root.classList.add('bc-active');
     root.style.setProperty('--bc-opacity', settings.cursorOpacity);
     if (settings.hideNativeCursor) root.classList.add('bc-hide-native');
+
+    // Auto-contrast: blend the dot/ring against the page so they invert to stay
+    // visible on any background (white on dark, dark on light). Forcing white
+    // gives a clean inversion under the "difference" blend mode.
+    if (settings.autoContrast) {
+      root.classList.add('bc-auto-contrast');
+      settings.dotColor = '#ffffff';
+      settings.ringColor = '#ffffff';
+    }
 
     /* ---- Fluid (smoke) layer ------------------------------------- */
     if (settings.enableFluid && !reduced && window.BubbleCursorFluid) {

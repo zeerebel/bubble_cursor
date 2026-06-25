@@ -4,7 +4,7 @@ Tags: cursor, custom cursor, fluid, webgl, smoke, mouse, elementor
 Requires at least: 5.6
 Tested up to: 6.8
 Requires PHP: 7.2
-Stable tag: 1.1.0
+Stable tag: 1.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -60,6 +60,14 @@ settings.
 That is intentional — a fluid mouse cursor has no meaning on touch screens.
 
 == Changelog ==
+
+= 1.2.0 =
+* Smoke colours: choose a colour mode — Rainbow (random, the original),
+  Palette (pick up to 5 of your own colours/shades), or Single (one colour with
+  automatic shade variation).
+* "Adapt to background": auto-invert the dot + ring so the cursor stays visible
+  on both light and dark sections (uses white + "difference" blending).
+* Added an optional preserve-drawing-buffer flag for the fluid canvas.
 
 = 1.1.0 =
 * New controls: dot/ring size, ring thickness, cursor opacity, smoke opacity,

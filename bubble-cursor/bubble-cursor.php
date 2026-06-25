@@ -3,7 +3,7 @@
  * Plugin Name:       Bubble Cursor — Smokey Fluid Cursor
  * Plugin URI:        https://github.com/zeerebel/bubble_cursor
  * Description:       Adds a colourful WebGL "smoke" fluid trail plus a dot + ring custom cursor with a "View" hover bubble — a replica of the TreeThemes "Deep" theme cursor. Works on any theme (Elementor or not). No coding required.
- * Version:           1.1.0
+ * Version:           1.2.0
  * Requires at least: 5.6
  * Requires PHP:      7.2
  * Author:            zeerebel
@@ -20,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // No direct access.
 }
 
-define( 'BUBBLE_CURSOR_VERSION', '1.1.0' );
+define( 'BUBBLE_CURSOR_VERSION', '1.2.0' );
 define( 'BUBBLE_CURSOR_FILE', __FILE__ );
 define( 'BUBBLE_CURSOR_URL', plugin_dir_url( __FILE__ ) );
 define( 'BUBBLE_CURSOR_PATH', plugin_dir_path( __FILE__ ) );
@@ -82,6 +82,20 @@ final class Bubble_Cursor {
 			'cursor_opacity'        => 1,
 			'smoke_opacity'         => 1,
 			'smoke_blend'           => '',
+			'auto_contrast'         => 0,
+			// Colour mode: rainbow (random) | palette (your colours) | single (one colour + shades).
+			'color_mode'            => 'rainbow',
+			'single_color'          => '#1e90ff',
+			'pal_color_1'           => '#1e90ff',
+			'pal_on_1'              => 1,
+			'pal_color_2'           => '#8a2be2',
+			'pal_on_2'              => 1,
+			'pal_color_3'           => '#00e5ff',
+			'pal_on_3'              => 1,
+			'pal_color_4'           => '#ff3366',
+			'pal_on_4'              => 0,
+			'pal_color_5'           => '#ffd166',
+			'pal_on_5'              => 0,
 			// Smoke physics / intensity.
 			'colorful'              => 1,
 			'bloom'                 => 1,
@@ -103,6 +117,26 @@ final class Bubble_Cursor {
 	 */
 	private static function blend_modes() {
 		return array( '', 'screen', 'lighten', 'overlay', 'difference', 'color-dodge', 'hard-light', 'soft-light' );
+	}
+
+	/**
+	 * Collect the enabled, valid palette colours (up to 5) as a list of hex strings.
+	 *
+	 * @param array $o Options.
+	 * @return array
+	 */
+	private static function palette_from_options( $o ) {
+		$out = array();
+		for ( $i = 1; $i <= 5; $i++ ) {
+			if ( empty( $o[ 'pal_on_' . $i ] ) ) {
+				continue;
+			}
+			$hex = isset( $o[ 'pal_color_' . $i ] ) ? $o[ 'pal_color_' . $i ] : '';
+			if ( preg_match( '/^#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6})$/', $hex ) ) {
+				$out[] = $hex;
+			}
+		}
+		return $out;
 	}
 
 	/**
@@ -237,6 +271,7 @@ final class Bubble_Cursor {
 				'cursorOpacity'    => (float) $o['cursor_opacity'],
 				'smokeOpacity'     => (float) $o['smoke_opacity'],
 				'smokeBlend'       => $o['smoke_blend'],
+				'autoContrast'     => (bool) $o['auto_contrast'],
 				'fluid'            => array(
 					'SPLAT_FORCE'          => (float) $o['splat_force'],
 					'SPLAT_RADIUS'         => (float) $o['splat_radius'],
@@ -248,6 +283,9 @@ final class Bubble_Cursor {
 					'DYE_RESOLUTION'       => self::quality_to_dye( $o['quality'] ),
 					'COLORFUL'             => (bool) $o['colorful'],
 					'BLOOM'                => (bool) $o['bloom'],
+					'COLOR_MODE'           => $o['color_mode'],
+					'PALETTE'              => self::palette_from_options( $o ),
+					'SINGLE_COLOR'         => $o['single_color'],
 				),
 			),
 			$o
@@ -341,6 +379,20 @@ final class Bubble_Cursor {
 		$blend              = isset( $input['smoke_blend'] ) ? $input['smoke_blend'] : $d['smoke_blend'];
 		$out['smoke_blend'] = in_array( $blend, self::blend_modes(), true ) ? $blend : $d['smoke_blend'];
 
+		// Colour mode + palette + auto-contrast.
+		$out['auto_contrast'] = empty( $input['auto_contrast'] ) ? 0 : 1;
+
+		$mode                = isset( $input['color_mode'] ) ? $input['color_mode'] : $d['color_mode'];
+		$out['color_mode']   = in_array( $mode, array( 'rainbow', 'palette', 'single' ), true ) ? $mode : $d['color_mode'];
+		$out['single_color'] = $this->sanitize_color( isset( $input['single_color'] ) ? $input['single_color'] : $d['single_color'], $d['single_color'] );
+
+		for ( $i = 1; $i <= 5; $i++ ) {
+			$ck           = 'pal_color_' . $i;
+			$ok           = 'pal_on_' . $i;
+			$out[ $ck ]   = $this->sanitize_color( isset( $input[ $ck ] ) ? $input[ $ck ] : $d[ $ck ], $d[ $ck ] );
+			$out[ $ok ]   = empty( $input[ $ok ] ) ? 0 : 1;
+		}
+
 		return $out;
 	}
 
@@ -425,6 +477,10 @@ final class Bubble_Cursor {
 						<td><input type="text" class="regular-text" name="<?php echo esc_attr( $n ); ?>[ring_color]" value="<?php echo esc_attr( $o['ring_color'] ); ?>" placeholder="#ffffff"></td>
 					</tr>
 					<tr>
+						<th scope="row"><?php esc_html_e( 'Adapt to background', 'bubble-cursor' ); ?></th>
+						<td><label><input type="checkbox" name="<?php echo esc_attr( $n ); ?>[auto_contrast]" value="1" <?php checked( $o['auto_contrast'], 1 ); ?>> <?php esc_html_e( 'Auto-invert the dot + ring so they stay visible on light AND dark sections (uses white + "difference" blending; overrides the dot/ring colours above).', 'bubble-cursor' ); ?></label></td>
+					</tr>
+					<tr>
 						<th scope="row"><?php esc_html_e( 'Hover text', 'bubble-cursor' ); ?></th>
 						<td>
 							<input type="text" class="regular-text" name="<?php echo esc_attr( $n ); ?>[hover_text]" value="<?php echo esc_attr( $o['hover_text'] ); ?>" placeholder="View">
@@ -457,6 +513,37 @@ final class Bubble_Cursor {
 					<tr>
 						<th scope="row"><?php esc_html_e( 'Cursor opacity', 'bubble-cursor' ); ?></th>
 						<td><input type="number" step="0.05" min="0.1" max="1" name="<?php echo esc_attr( $n ); ?>[cursor_opacity]" value="<?php echo esc_attr( $o['cursor_opacity'] ); ?>"> <span class="description"><?php esc_html_e( 'Transparency of the dot + ring, 0.1–1 (default 1).', 'bubble-cursor' ); ?></span></td>
+					</tr>
+				</table>
+
+				<h2 class="title"><?php esc_html_e( 'Smoke colours', 'bubble-cursor' ); ?></h2>
+				<table class="form-table" role="presentation">
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Colour mode', 'bubble-cursor' ); ?></th>
+						<td>
+							<select name="<?php echo esc_attr( $n ); ?>[color_mode]">
+								<option value="rainbow" <?php selected( $o['color_mode'], 'rainbow' ); ?>><?php esc_html_e( 'Rainbow (random colours)', 'bubble-cursor' ); ?></option>
+								<option value="palette" <?php selected( $o['color_mode'], 'palette' ); ?>><?php esc_html_e( 'Palette (colours I pick)', 'bubble-cursor' ); ?></option>
+								<option value="single" <?php selected( $o['color_mode'], 'single' ); ?>><?php esc_html_e( 'Single colour (+ auto shades)', 'bubble-cursor' ); ?></option>
+							</select>
+							<p class="description"><?php esc_html_e( 'Rainbow = the original random colours. Palette = only the colours you enable below. Single = one colour with automatic shade variation.', 'bubble-cursor' ); ?></p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Single colour', 'bubble-cursor' ); ?></th>
+						<td><input type="color" name="<?php echo esc_attr( $n ); ?>[single_color]" value="<?php echo esc_attr( $o['single_color'] ); ?>"> <span class="description"><?php esc_html_e( 'Used when Colour mode is "Single".', 'bubble-cursor' ); ?></span></td>
+					</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Palette colours', 'bubble-cursor' ); ?></th>
+						<td>
+							<?php for ( $i = 1; $i <= 5; $i++ ) : ?>
+								<label style="display:inline-flex;align-items:center;gap:6px;margin:0 14px 8px 0;">
+									<input type="checkbox" name="<?php echo esc_attr( $n ); ?>[pal_on_<?php echo (int) $i; ?>]" value="1" <?php checked( $o[ 'pal_on_' . $i ], 1 ); ?>>
+									<input type="color" name="<?php echo esc_attr( $n ); ?>[pal_color_<?php echo (int) $i; ?>]" value="<?php echo esc_attr( $o[ 'pal_color_' . $i ] ); ?>">
+								</label>
+							<?php endfor; ?>
+							<p class="description"><?php esc_html_e( 'Tick a colour to include it. Add a few shades of one colour, or your brand colours. Used when Colour mode is "Palette".', 'bubble-cursor' ); ?></p>
+						</td>
 					</tr>
 				</table>
 

@@ -27,6 +27,9 @@
     SHADING: true,
     COLORFUL: true,
     INTENSITY: 1,
+    COLOR_MODE: 'rainbow',
+    PALETTE: [],
+    SINGLE_COLOR: '#1e90ff',
     COLOR_UPDATE_SPEED: 10,
     PAUSED: false,
     BACK_COLOR: { r: 0, g: 0, b: 0 },
@@ -38,7 +41,8 @@
     BLOOM_THRESHOLD: 0.6,
     BLOOM_SOFT_KNEE: 0.7,
     SUNRAYS: false,
-    MAX_DPR: 2
+    MAX_DPR: 2,
+    PRESERVE_DRAWING_BUFFER: false
   };
 
   function FluidSim(canvas, userConfig) {
@@ -53,7 +57,7 @@
     this._raf = null;
     this._listeners = [];
 
-    var ctx = getWebGLContext(canvas);
+    var ctx = getWebGLContext(canvas, config.PRESERVE_DRAWING_BUFFER);
     if (!ctx) { this.unsupported = true; return; }
     this.gl = ctx.gl;
     this.ext = ctx.ext;
@@ -79,8 +83,8 @@
   /* ----------------------------------------------------------------- *
    * WebGL context + extensions
    * ----------------------------------------------------------------- */
-  function getWebGLContext(canvas) {
-    var params = { alpha: true, depth: false, stencil: false, antialias: false, preserveDrawingBuffer: false };
+  function getWebGLContext(canvas, preserve) {
+    var params = { alpha: true, depth: false, stencil: false, antialias: false, preserveDrawingBuffer: !!preserve };
     var gl = canvas.getContext('webgl2', params);
     var isWebGL2 = !!gl;
     if (!isWebGL2) {
@@ -945,6 +949,37 @@
     return c;
   }
 
+  // Parse "#rgb" / "#rrggbb" to {r,g,b} in 0..1, or null if invalid.
+  function hexToRgb01(hex) {
+    if (typeof hex !== 'string') return null;
+    hex = hex.replace('#', '');
+    if (hex.length === 3) { hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2]; }
+    if (hex.length !== 6) return null;
+    var n = parseInt(hex, 16);
+    if (isNaN(n)) return null;
+    return { r: ((n >> 16) & 255) / 255, g: ((n >> 8) & 255) / 255, b: (n & 255) / 255 };
+  }
+
+  // Choose a splat colour according to the configured colour mode.
+  //  - rainbow: random hue (original behaviour)
+  //  - palette: a random colour from the user's PALETTE
+  //  - single:  the SINGLE_COLOR with a little random brightness for shade variation
+  function pickColor(config) {
+    var mult = (config.INTENSITY != null ? config.INTENSITY : 1) * 0.15;
+    var mode = config.COLOR_MODE || 'rainbow';
+    if (mode === 'palette' && config.PALETTE && config.PALETTE.length) {
+      var c = hexToRgb01(config.PALETTE[Math.floor(Math.random() * config.PALETTE.length)]);
+      if (c) { return { r: c.r * mult, g: c.g * mult, b: c.b * mult }; }
+    } else if (mode === 'single') {
+      var sc = hexToRgb01(config.SINGLE_COLOR || '#ffffff');
+      if (sc) {
+        var v = 0.6 + Math.random() * 0.8; // shade variation
+        return { r: sc.r * mult * v, g: sc.g * mult * v, b: sc.b * mult * v };
+      }
+    }
+    return generateColor(mult); // rainbow, or fallback when palette/single is unusable
+  }
+
   function HSVtoRGB(h, s, v) {
     var r, g, b, i, f, p, q, t;
     i = Math.floor(h * 6);
@@ -1003,7 +1038,7 @@
       var posY = clientY - rect.top;
       if (!pointer.down) {
         pointer.down = true;
-        pointer.color = generateColor(self.config.INTENSITY * 0.15);
+        pointer.color = pickColor(self.config);
         pointer.prevTexcoordX = posX / self.canvas.clientWidth;
         pointer.prevTexcoordY = 1.0 - posY / self.canvas.clientHeight;
         pointer.texcoordX = pointer.prevTexcoordX;
@@ -1047,7 +1082,7 @@
       this.colorUpdateTimer += dt * this.config.COLOR_UPDATE_SPEED;
       if (this.colorUpdateTimer >= 1) {
         this.colorUpdateTimer = this.colorUpdateTimer % 1;
-        for (var i = 0; i < this.pointers.length; i++) this.pointers[i].color = generateColor(this.config.INTENSITY * 0.15);
+        for (var i = 0; i < this.pointers.length; i++) this.pointers[i].color = pickColor(this.config);
       }
     }
 
