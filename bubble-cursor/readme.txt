@@ -4,7 +4,7 @@ Tags: cursor, custom cursor, fluid, webgl, smoke, mouse, elementor
 Requires at least: 5.6
 Tested up to: 6.8
 Requires PHP: 7.2
-Stable tag: 1.5.0
+Stable tag: 1.5.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,6 +63,9 @@ settings.
 That is intentional — a fluid mouse cursor has no meaning on touch screens.
 
 == Changelog ==
+
+= 1.5.1 =
+* Fixed: the Quick-preset dropdown could be restored by the browser and silently re-apply the preset on a later save, overwriting your manual tweaks. The dropdown now reliably resets to "choose a look" after saving.
 
 = 1.5.0 =
 * New "Image preview" effect: the hovered item's image follows the cursor (the

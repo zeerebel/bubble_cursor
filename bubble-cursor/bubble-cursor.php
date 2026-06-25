@@ -3,7 +3,7 @@
  * Plugin Name:       Bubble Cursor — Smokey Fluid Cursor
  * Plugin URI:        https://github.com/zeerebel/bubble_cursor
  * Description:       Adds a colourful WebGL "smoke" fluid trail plus a dot + ring custom cursor with a "View" hover bubble — a replica of the TreeThemes "Deep" theme cursor. Works on any theme (Elementor or not). No coding required.
- * Version:           1.5.0
+ * Version:           1.5.1
  * Requires at least: 5.6
  * Requires PHP:      7.2
  * Author:            zeerebel
@@ -20,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // No direct access.
 }
 
-define( 'BUBBLE_CURSOR_VERSION', '1.5.0' );
+define( 'BUBBLE_CURSOR_VERSION', '1.5.1' );
 define( 'BUBBLE_CURSOR_FILE', __FILE__ );
 define( 'BUBBLE_CURSOR_URL', plugin_dir_url( __FILE__ ) );
 define( 'BUBBLE_CURSOR_PATH', plugin_dir_path( __FILE__ ) );
@@ -548,7 +548,7 @@ final class Bubble_Cursor {
 					<tr>
 						<th scope="row"><?php esc_html_e( 'Apply a preset', 'bubble-cursor' ); ?></th>
 						<td>
-							<select name="<?php echo esc_attr( $n ); ?>[apply_preset]">
+							<select name="<?php echo esc_attr( $n ); ?>[apply_preset]" id="bc-apply-preset" autocomplete="off">
 								<option value="">&mdash; <?php esc_html_e( 'choose a look, then Save', 'bubble-cursor' ); ?> &mdash;</option>
 								<option value="neon"><?php esc_html_e( 'Neon (bright palette + glow)', 'bubble-cursor' ); ?></option>
 								<option value="mono"><?php esc_html_e( 'Mono (white smoke, adapts to background)', 'bubble-cursor' ); ?></option>
@@ -556,6 +556,7 @@ final class Bubble_Cursor {
 								<option value="smoke"><?php esc_html_e( 'Smoke only (no dot / ring)', 'bubble-cursor' ); ?></option>
 							</select>
 							<p class="description"><?php esc_html_e( 'Pick a preset and click Save Changes to apply it. It overwrites the related options below, which you can then fine-tune. The dropdown resets after saving.', 'bubble-cursor' ); ?></p>
+							<script>document.addEventListener('DOMContentLoaded',function(){var s=document.getElementById('bc-apply-preset');if(s){s.selectedIndex=0;}});</script>
 						</td>
 					</tr>
 				</table>
