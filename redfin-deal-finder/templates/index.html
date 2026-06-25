@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Redfin Deal Finder</title>
+<style>
+  :root{
+    --red:#c01f2f; --red-dark:#9b1825; --ink:#1f2430; --muted:#697086;
+    --line:#e6e8ee; --bg:#f5f6f9; --card:#ffffff; --good:#1f9d57; --gold:#caa23a;
+    --shadow:0 1px 3px rgba(20,24,40,.08),0 6px 18px rgba(20,24,40,.06);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+       color:var(--ink);background:var(--bg);}
+  header{background:var(--red);color:#fff;padding:18px 26px;display:flex;align-items:center;gap:14px;
+         box-shadow:var(--shadow);position:sticky;top:0;z-index:10}
+  header .logo{font-weight:800;font-size:20px;letter-spacing:.2px}
+  header .tag{font-size:13px;opacity:.9}
+  .wrap{display:grid;grid-template-columns:330px 1fr;gap:24px;max-width:1280px;margin:24px auto;padding:0 22px}
+  @media(max-width:880px){.wrap{grid-template-columns:1fr}}
+
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
+  .filters{padding:20px;align-self:start;position:sticky;top:90px}
+  .filters h2{margin:0 0 4px;font-size:16px}
+  .filters p.hint{margin:0 0 16px;color:var(--muted);font-size:12.5px;line-height:1.5}
+  label.fld{display:block;margin:14px 0 6px;font-size:12.5px;font-weight:600;color:#3a4153}
+  input[type=text],input[type=number],select{width:100%;padding:10px 11px;border:1px solid var(--line);
+       border-radius:9px;font-size:14px;background:#fff;color:var(--ink)}
+  input:focus,select:focus{outline:2px solid rgba(192,31,47,.25);border-color:var(--red)}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+  .chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;
+        padding:7px 12px;font-size:12.5px;cursor:pointer;user-select:none;background:#fff}
+  .chip input{margin:0}
+  .chip.on{border-color:var(--red);background:#fdeced;color:var(--red-dark);font-weight:600}
+  .slider-row{display:flex;align-items:center;gap:10px;margin-top:6px}
+  .slider-row input[type=range]{flex:1;accent-color:var(--red)}
+  .slider-row .val{min-width:34px;text-align:right;font-weight:700;font-size:13px}
+  .btns{display:flex;gap:10px;margin-top:20px}
+  button{font-family:inherit;font-size:14px;font-weight:700;border-radius:10px;padding:12px 14px;cursor:pointer;border:1px solid transparent}
+  .btn-primary{background:var(--red);color:#fff;flex:1}
+  .btn-primary:hover{background:var(--red-dark)}
+  .btn-ghost{background:#fff;border-color:var(--line);color:#3a4153}
+  .btn-ghost:hover{border-color:var(--muted)}
+  .demo-toggle{display:flex;align-items:center;gap:8px;margin-top:14px;font-size:12.5px;color:var(--muted)}
+
+  .results{min-height:300px}
+  .banner{padding:12px 16px;border-radius:11px;font-size:13px;margin-bottom:16px;border:1px solid}
+  .banner.live{background:#eafaf0;border-color:#bfe9cf;color:#1c7a44}
+  .banner.demo{background:#fff7e6;border-color:#f0dcab;color:#8a6a16}
+  .toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+  .toolbar .count{font-weight:700;font-size:15px}
+  .toolbar .sortwrap{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+  .toolbar select{width:auto;padding:8px 10px}
+
+  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:var(--shadow);
+        display:flex;flex-direction:column;transition:transform .08s ease, box-shadow .08s ease}
+  .card:hover{transform:translateY(-2px);box-shadow:0 8px 26px rgba(20,24,40,.12)}
+  .card .top{padding:14px 16px 6px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+  .price{font-size:21px;font-weight:800}
+  .score{flex:0 0 auto;text-align:center;border-radius:10px;padding:6px 9px;color:#fff;font-weight:800;line-height:1;min-width:46px}
+  .score small{display:block;font-size:9px;font-weight:700;opacity:.9;margin-top:2px}
+  .s-hi{background:var(--good)} .s-mid{background:var(--gold)} .s-lo{background:#9aa1b2}
+  .addr{padding:0 16px;font-size:13.5px;color:#3a4153;line-height:1.4}
+  .addr .city{color:var(--muted);font-size:12.5px}
+  .specs{display:flex;gap:14px;padding:10px 16px;font-size:13px;color:#3a4153;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .specs b{font-weight:700}
+  .reasons{padding:11px 16px;display:flex;flex-wrap:wrap;gap:6px}
+  .reason{background:#fdeced;color:var(--red-dark);border-radius:999px;padding:4px 9px;font-size:11.5px;font-weight:600}
+  .card .foot{margin-top:auto;padding:12px 16px}
+  .card .foot a{display:block;text-align:center;background:#fff;border:1px solid var(--line);border-radius:9px;
+        padding:9px;text-decoration:none;color:var(--red-dark);font-weight:700;font-size:13px}
+  .card .foot a:hover{border-color:var(--red);background:#fdeced}
+  .empty{padding:60px 20px;text-align:center;color:var(--muted)}
+  .spinner{width:26px;height:26px;border:3px solid var(--line);border-top-color:var(--red);border-radius:50%;
+        animation:spin .8s linear infinite;margin:40px auto}
+  @keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<header>
+  <span class="logo">🏠 Redfin Deal Finder</span>
+  <span class="tag">Pick your filters → score the best deals → save for a daily check</span>
+</header>
+
+<div class="wrap">
+  <!-- ----------------------------- FILTERS ----------------------------- -->
+  <form class="panel filters" id="filters" onsubmit="return false">
+    <h2>What are you looking for?</h2>
+    <p class="hint">Enter an area to search and (optionally) narrow it down. Everything below is optional except the area.</p>
+
+    <label class="fld" for="location">Area to search (City, ST or ZIP)</label>
+    <input type="text" id="location" placeholder="Austin, TX  ·  or  ·  78704" value="Austin, TX" />
+
+    <label class="fld" for="zips">Only these ZIP codes <span style="font-weight:400;color:var(--muted)">(optional, comma-sep)</span></label>
+    <input type="text" id="zips" placeholder="78704, 78745, 78702" />
+
+    <label class="fld">Price range</label>
+    <div class="row2">
+      <input type="number" id="min_price" placeholder="Min $" min="0" step="5000" />
+      <input type="number" id="max_price" placeholder="Max $" min="0" step="5000" />
+    </div>
+
+    <div class="row2">
+      <div>
+        <label class="fld" for="min_beds">Beds (min)</label>
+        <select id="min_beds">
+          <option value="">Any</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+        </select>
+      </div>
+      <div>
+        <label class="fld" for="min_baths">Baths (min)</label>
+        <select id="min_baths">
+          <option value="">Any</option><option>1</option><option>2</option><option>3</option><option>4</option>
+        </select>
+      </div>
+    </div>
+
+    <label class="fld">Home type</label>
+    <div class="chips" id="home_types">
+      <label class="chip"><input type="checkbox" value="house" />House</label>
+      <label class="chip"><input type="checkbox" value="condo" />Condo</label>
+      <label class="chip"><input type="checkbox" value="townhouse" />Townhouse</label>
+      <label class="chip"><input type="checkbox" value="multifamily" />Multi-family</label>
+      <label class="chip"><input type="checkbox" value="land" />Land</label>
+    </div>
+
+    <label class="fld" for="max_dom">Max days on market <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
+    <input type="number" id="max_dom" placeholder="e.g. 120" min="0" step="5" />
+
+    <label class="fld">Minimum deal score: <span id="dealVal" style="color:var(--red)">0</span></label>
+    <div class="slider-row">
+      <input type="range" id="min_deal" min="0" max="100" step="5" value="0" />
+      <span class="val" id="dealValR">0</span>
+    </div>
+
+    <div class="btns">
+      <button class="btn-primary" id="searchBtn" type="button">Search deals</button>
+      <button class="btn-ghost" id="saveBtn" type="button" title="Save these filters for the daily digest script">Save&nbsp;⭐</button>
+    </div>
+    <label class="demo-toggle"><input type="checkbox" id="allow_live" checked /> Try live Redfin (uncheck to preview with demo data)</label>
+  </form>
+
+  <!-- ----------------------------- RESULTS ----------------------------- -->
+  <div class="results">
+    <div id="banner"></div>
+    <div class="toolbar" id="toolbar" style="display:none">
+      <span class="count" id="count"></span>
+      <span class="sortwrap">Sort by
+        <select id="sort">
+          <option value="deal">Best deal score</option>
+          <option value="price_asc">Price: low → high</option>
+          <option value="price_desc">Price: high → low</option>
+          <option value="ppsf">$ / sqft: low → high</option>
+          <option value="dom">Days on market: most</option>
+        </select>
+      </span>
+    </div>
+    <div id="cards" class="cards"></div>
+    <div id="empty" class="empty">Set your filters and hit <b>Search deals</b> to begin.</div>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let LAST = [];   // last result set (scored)
+
+// chip toggle styling
+document.querySelectorAll('#home_types .chip input').forEach(cb=>{
+  const sync=()=>cb.closest('.chip').classList.toggle('on', cb.checked);
+  cb.addEventListener('change', sync); sync();
+});
+$('min_deal').addEventListener('input', e=>{ $('dealVal').textContent=e.target.value; $('dealValR').textContent=e.target.value; render(); });
+$('sort').addEventListener('change', render);
+
+function gatherFilters(){
+  return {
+    location: $('location').value,
+    zips: $('zips').value,
+    min_price: $('min_price').value,
+    max_price: $('max_price').value,
+    min_beds: $('min_beds').value,
+    min_baths: $('min_baths').value,
+    max_dom: $('max_dom').value,
+    home_types: [...document.querySelectorAll('#home_types input:checked')].map(c=>c.value),
+    allow_live: $('allow_live').checked,
+  };
+}
+
+function money(n){ return n==null ? '—' : '$'+Math.round(n).toLocaleString(); }
+function scoreClass(s){ return s>=60?'s-hi':s>=35?'s-mid':'s-lo'; }
+
+async function doSearch(){
+  $('empty').style.display='none';
+  $('toolbar').style.display='none';
+  $('banner').innerHTML='';
+  $('cards').innerHTML='<div class="spinner"></div>';
+  try{
+    const res = await fetch('/api/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(gatherFilters())});
+    const data = await res.json();
+    LAST = data.listings || [];
+    const cls = data.source==='live' ? 'live' : 'demo';
+    const label = data.source==='live' ? '🟢 Live Redfin data' : '🟡 Demo data';
+    $('banner').innerHTML = `<div class="banner ${cls}"><b>${label}.</b> ${data.message||''}</div>`;
+    render();
+  }catch(err){
+    $('cards').innerHTML='';
+    $('banner').innerHTML=`<div class="banner demo"><b>Something went wrong:</b> ${err}</div>`;
+  }
+}
+
+function render(){
+  const minDeal = +$('min_deal').value;
+  let list = LAST.filter(h => h.deal_score >= minDeal);
+  const sort = $('sort').value;
+  const by = {
+    deal:(a,b)=>b.deal_score-a.deal_score,
+    price_asc:(a,b)=>(a.price||1e12)-(b.price||1e12),
+    price_desc:(a,b)=>(b.price||0)-(a.price||0),
+    ppsf:(a,b)=>(a.ppsf||1e9)-(b.ppsf||1e9),
+    dom:(a,b)=>(b.dom||0)-(a.dom||0),
+  }[sort];
+  list.sort(by);
+
+  $('toolbar').style.display = LAST.length ? 'flex' : 'none';
+  $('count').textContent = `${list.length} home${list.length!==1?'s':''}` + (minDeal? ` · deal score ≥ ${minDeal}`:'');
+
+  if(!list.length){
+    $('cards').innerHTML='';
+    $('empty').style.display='block';
+    $('empty').innerHTML = LAST.length ? 'No homes meet that deal score — lower the slider.' : 'No matches. Try widening your filters.';
+    return;
+  }
+  $('empty').style.display='none';
+  $('cards').innerHTML = list.map(h=>{
+    const specs = [
+      h.beds!=null?`<b>${h.beds}</b> bd`:'',
+      h.baths!=null?`<b>${h.baths}</b> ba`:'',
+      h.sqft!=null?`<b>${h.sqft.toLocaleString()}</b> sqft`:'',
+      h.ppsf!=null?`<b>$${Math.round(h.ppsf)}</b>/sqft`:'',
+      h.dom!=null?`<b>${h.dom}</b> days`:'',
+    ].filter(Boolean).join(' · ');
+    const reasons = (h.deal_reasons||[]).map(r=>`<span class="reason">${r}</span>`).join('');
+    return `<div class="card">
+      <div class="top">
+        <div class="price">${money(h.price)}</div>
+        <div class="score ${scoreClass(h.deal_score)}">${h.deal_score}<small>DEAL</small></div>
+      </div>
+      <div class="addr">${h.address}<div class="city">${[h.city,h.state,h.zip].filter(Boolean).join(', ')}</div></div>
+      <div class="specs">${specs}</div>
+      ${reasons?`<div class="reasons">${reasons}</div>`:''}
+      <div class="foot"><a href="${h.url}" target="_blank" rel="noopener">View on Redfin ↗</a></div>
+    </div>`;
+  }).join('');
+}
+
+async function saveSearch(){
+  const r = await fetch('/api/save-search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(gatherFilters())});
+  const d = await r.json();
+  $('saveBtn').textContent = d.ok ? 'Saved ✓' : 'Save ⭐';
+  setTimeout(()=>{$('saveBtn').innerHTML='Save&nbsp;⭐';}, 1800);
+}
+
+$('searchBtn').addEventListener('click', doSearch);
+$('saveBtn').addEventListener('click', saveSearch);
+</script>
+</body>
+</html>
