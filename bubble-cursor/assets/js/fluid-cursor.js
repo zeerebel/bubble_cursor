@@ -42,7 +42,8 @@
     BLOOM_SOFT_KNEE: 0.7,
     SUNRAYS: false,
     MAX_DPR: 2,
-    PRESERVE_DRAWING_BUFFER: false
+    PRESERVE_DRAWING_BUFFER: false,
+    ADAPTIVE: false
   };
 
   function FluidSim(canvas, userConfig) {
@@ -72,6 +73,9 @@
     this.lastColorTime = 0;
     this.colorUpdateTimer = 0;
     this.lastUpdate = now();
+    this._fpsAccum = 0;
+    this._fpsFrames = 0;
+    this._minQuality = false;
 
     this._initShaders();
     this._initBlit();
@@ -1093,8 +1097,10 @@
   FluidSim.prototype.frame = function () {
     if (this.contextLost) return;
     var t = now();
-    var dt = Math.min((t - this.lastUpdate) / 1000, 0.016666);
+    var realMs = t - this.lastUpdate;
+    var dt = Math.min(realMs / 1000, 0.016666);
     this.lastUpdate = t;
+    if (this.config.ADAPTIVE && !this._minQuality) this._adapt(realMs);
 
     if (this.config.COLORFUL) {
       this.colorUpdateTimer += dt * this.config.COLOR_UPDATE_SPEED;
@@ -1107,6 +1113,26 @@
     this.applyInputs();
     if (!this.config.PAUSED) this.step(dt);
     this.render(null);
+  };
+
+  // Adaptive quality: if the real frame rate stays low, step the smoke quality
+  // down (dye resolution, then bloom) so heavy pages stay smooth. Monotonic —
+  // it only steps down, never oscillates, and ignores one-off stalls.
+  FluidSim.prototype._adapt = function (realMs) {
+    if (realMs > 100) { this._fpsAccum = 0; this._fpsFrames = 0; return; } // ignore stalls
+    this._fpsAccum += realMs;
+    this._fpsFrames++;
+    if (this._fpsAccum < 1000) return; // sample roughly once a second
+    var fps = this._fpsFrames * 1000 / this._fpsAccum;
+    this._fpsAccum = 0;
+    this._fpsFrames = 0;
+    if (fps >= 40) return; // healthy enough
+    var changed = false;
+    if (this.config.DYE_RESOLUTION > 540) { this.config.DYE_RESOLUTION = 512; changed = true; }
+    else if (this.config.BLOOM) { this.config.BLOOM = false; changed = true; }
+    else if (this.config.DYE_RESOLUTION > 280) { this.config.DYE_RESOLUTION = 256; changed = true; }
+    else { this._minQuality = true; }
+    if (changed) this.initFramebuffers();
   };
 
   FluidSim.prototype.start = function () {
@@ -1125,6 +1151,8 @@
       self._raf = window.requestAnimationFrame(loop);
     };
     this.lastUpdate = now();
+    this._fpsAccum = 0;
+    this._fpsFrames = 0;
     this._raf = window.requestAnimationFrame(loop);
   };
 
@@ -1180,6 +1208,8 @@
       if (instance) { instance.destroy(); instance = null; }
     },
     burst: function (clientX, clientY) { if (instance) instance.burstAt(clientX, clientY); },
+    pause: function () { if (instance) instance.stop(); },
+    resume: function () { if (instance && !instance.running && !instance.unsupported && !instance.contextLost) instance.start(); },
     isRunning: function () { return !!(instance && instance.running); }
   };
 })(window, document);

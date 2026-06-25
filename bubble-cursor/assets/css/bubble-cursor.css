@@ -126,6 +126,30 @@ html.bc-magnetic.bc-hover .bc-dot {
   opacity: var(--bc-opacity, 1);
 }
 
+/* Image preview that follows the cursor over portfolio/image items.
+   The JS writes `transform` every frame for the follow, so only `opacity` is
+   transitioned here — transitioning transform too would make it rubber-band. */
+.bc-preview {
+  position: fixed;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 2147483645;
+  border-radius: 10px;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  transform: translate3d(-400px, -400px, 0) translate(-50%, -50%);
+  transition: opacity 0.28s ease;
+  will-change: transform, opacity;
+}
+
+html.bc-preview-on .bc-preview {
+  opacity: 1;
+}
+
 /* Click burst: an expanding ring ripple at the click point (positioned via
    inline left/top set by the JS; centred with the negative margin). */
 .bc-ripple {

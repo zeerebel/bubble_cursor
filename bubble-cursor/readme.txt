@@ -4,7 +4,7 @@ Tags: cursor, custom cursor, fluid, webgl, smoke, mouse, elementor
 Requires at least: 5.6
 Tested up to: 6.8
 Requires PHP: 7.2
-Stable tag: 1.4.0
+Stable tag: 1.5.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,6 +63,14 @@ settings.
 That is intentional — a fluid mouse cursor has no meaning on touch screens.
 
 == Changelog ==
+
+= 1.5.0 =
+* New "Image preview" effect: the hovered item's image follows the cursor (the
+  agency portfolio peek). Pulls from a data-bubble-cursor-image attribute, an
+  img inside the item, or its background image.
+* New "Adaptive performance": auto-lowers smoke quality if the frame rate drops,
+  and pauses the smoke entirely in background tabs (saves CPU/battery).
+* Magnetic now hugs the element's shape/size (not just its centre).
 
 = 1.4.0 =
 * New optional effects (all off by default): Magnetic buttons (the ring snaps

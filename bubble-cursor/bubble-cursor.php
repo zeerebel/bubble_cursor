@@ -3,7 +3,7 @@
  * Plugin Name:       Bubble Cursor — Smokey Fluid Cursor
  * Plugin URI:        https://github.com/zeerebel/bubble_cursor
  * Description:       Adds a colourful WebGL "smoke" fluid trail plus a dot + ring custom cursor with a "View" hover bubble — a replica of the TreeThemes "Deep" theme cursor. Works on any theme (Elementor or not). No coding required.
- * Version:           1.4.0
+ * Version:           1.5.0
  * Requires at least: 5.6
  * Requires PHP:      7.2
  * Author:            zeerebel
@@ -20,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // No direct access.
 }
 
-define( 'BUBBLE_CURSOR_VERSION', '1.4.0' );
+define( 'BUBBLE_CURSOR_VERSION', '1.5.0' );
 define( 'BUBBLE_CURSOR_FILE', __FILE__ );
 define( 'BUBBLE_CURSOR_URL', plugin_dir_url( __FILE__ ) );
 define( 'BUBBLE_CURSOR_PATH', plugin_dir_path( __FILE__ ) );
@@ -90,6 +90,10 @@ final class Bubble_Cursor {
 			'magnetic'              => 0,
 			'click_burst'           => 0,
 			'elastic'               => 0,
+			'image_preview'         => 0,
+			'preview_selector'      => '',
+			'preview_size'          => 180,
+			'adaptive'              => 0,
 			// Colour mode: rainbow (random) | palette (your colours) | single (one colour + shades).
 			'color_mode'            => 'rainbow',
 			'single_color'          => '#1e90ff',
@@ -339,6 +343,9 @@ final class Bubble_Cursor {
 				'magnetic'         => (bool) $o['magnetic'],
 				'clickBurst'       => (bool) $o['click_burst'],
 				'elastic'          => (bool) $o['elastic'],
+				'imagePreview'     => (bool) $o['image_preview'],
+				'previewSelector'  => $o['preview_selector'],
+				'previewSize'      => (float) $o['preview_size'],
 				'fluid'            => array(
 					'SPLAT_FORCE'          => (float) $o['splat_force'],
 					'SPLAT_RADIUS'         => (float) $o['splat_radius'],
@@ -353,6 +360,7 @@ final class Bubble_Cursor {
 					'COLOR_MODE'           => $o['color_mode'],
 					'PALETTE'              => self::palette_from_options( $o ),
 					'SINGLE_COLOR'         => $o['single_color'],
+					'ADAPTIVE'             => (bool) $o['adaptive'],
 				),
 			),
 			$o
@@ -414,6 +422,8 @@ final class Bubble_Cursor {
 		$out['magnetic']      = empty( $input['magnetic'] ) ? 0 : 1;
 		$out['click_burst']   = empty( $input['click_burst'] ) ? 0 : 1;
 		$out['elastic']       = empty( $input['elastic'] ) ? 0 : 1;
+		$out['image_preview'] = empty( $input['image_preview'] ) ? 0 : 1;
+		$out['adaptive']      = empty( $input['adaptive'] ) ? 0 : 1;
 
 		$scope         = isset( $input['scope'] ) ? $input['scope'] : $d['scope'];
 		$out['scope']  = in_array( $scope, array( 'all', 'front' ), true ) ? $scope : $d['scope'];
@@ -429,6 +439,8 @@ final class Bubble_Cursor {
 
 		// Empty is allowed here (means "off").
 		$out['hover_text_selector'] = isset( $input['hover_text_selector'] ) ? sanitize_text_field( $input['hover_text_selector'] ) : $d['hover_text_selector'];
+		$out['preview_selector']    = isset( $input['preview_selector'] ) ? sanitize_text_field( $input['preview_selector'] ) : $d['preview_selector'];
+		$out['preview_size']        = $this->clamp_float( $input, 'preview_size', $d, 60, 420 );
 
 		$out['splat_force']          = $this->clamp_float( $input, 'splat_force', $d, 100, 20000 );
 		$out['splat_radius']         = $this->clamp_float( $input, 'splat_radius', $d, 0.01, 1 );
@@ -646,6 +658,25 @@ final class Bubble_Cursor {
 					<tr>
 						<th scope="row"><?php esc_html_e( 'Elastic ring', 'bubble-cursor' ); ?></th>
 						<td><label><input type="checkbox" name="<?php echo esc_attr( $n ); ?>[elastic]" value="1" <?php checked( $o['elastic'], 1 ); ?>> <?php esc_html_e( 'The ring squashes/stretches in the direction you move, like it has weight.', 'bubble-cursor' ); ?></label></td>
+					</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Image preview', 'bubble-cursor' ); ?></th>
+						<td><label><input type="checkbox" name="<?php echo esc_attr( $n ); ?>[image_preview]" value="1" <?php checked( $o['image_preview'], 1 ); ?>> <?php esc_html_e( "Show the item's image following the cursor when hovering the elements set below.", 'bubble-cursor' ); ?></label></td>
+					</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Preview selector', 'bubble-cursor' ); ?></th>
+						<td>
+							<input type="text" class="large-text code" name="<?php echo esc_attr( $n ); ?>[preview_selector]" value="<?php echo esc_attr( $o['preview_selector'] ); ?>" placeholder=".qodef-e-media-image, .portfolio-item">
+							<p class="description"><?php esc_html_e( 'CSS selector for items that show an image preview. The image is taken from a data-bubble-cursor-image="URL" attribute, an img inside the item, or the item background image.', 'bubble-cursor' ); ?></p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Preview size', 'bubble-cursor' ); ?></th>
+						<td><input type="number" step="10" min="60" max="420" name="<?php echo esc_attr( $n ); ?>[preview_size]" value="<?php echo esc_attr( $o['preview_size'] ); ?>"> <span class="description"><?php esc_html_e( 'px (default 180)', 'bubble-cursor' ); ?></span></td>
+					</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Adaptive performance', 'bubble-cursor' ); ?></th>
+						<td><label><input type="checkbox" name="<?php echo esc_attr( $n ); ?>[adaptive]" value="1" <?php checked( $o['adaptive'], 1 ); ?>> <?php esc_html_e( 'Automatically lower the smoke quality if the frame rate drops, to keep heavy pages smooth. (The smoke also pauses in background tabs automatically.)', 'bubble-cursor' ); ?></label></td>
 					</tr>
 				</table>
 

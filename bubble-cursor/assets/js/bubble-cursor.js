@@ -68,6 +68,9 @@
       magnetic: s.magnetic !== undefined ? !!s.magnetic : false,
       clickBurst: s.clickBurst !== undefined ? !!s.clickBurst : false,
       elastic: s.elastic !== undefined ? !!s.elastic : false,
+      imagePreview: s.imagePreview !== undefined ? !!s.imagePreview : false,
+      previewSelector: s.previewSelector || '',
+      previewSize: Math.max(60, Math.min(420, num(s.previewSize, 180))),
       mixBlend: s.mixBlend || '',
       fluid: s.fluid || {}
     };
@@ -131,9 +134,21 @@
       }
     }
 
+    /* ---- Image preview ------------------------------------------- */
+    var preview = null, previewSrc = '';
+    if (settings.imagePreview && settings.previewSelector && !reduced) {
+      preview = document.createElement('div');
+      preview.className = 'bc-preview';
+      preview.setAttribute('aria-hidden', 'true');
+      preview.style.width = settings.previewSize + 'px';
+      preview.style.height = settings.previewSize + 'px';
+      document.body.appendChild(preview);
+    }
+
     /* ---- Movement + hover (frame-based, stable) ------------------ */
     var mouseX = window.innerWidth / 2, mouseY = window.innerHeight / 2;
     var ringX = mouseX, ringY = mouseY;
+    var previewX = mouseX, previewY = mouseY;
     var visible = false;
     var rafId = null;
 
@@ -176,31 +191,73 @@
       return null;
     }
 
-    // Hit-test under the pointer once per frame; flip classes only on a real change.
-    function updateHover() {
-      if (!settings.hoverEffect) return;
-      if (mouseX === lastHitX && mouseY === lastHitY) return; // pointer hasn't moved
-      lastHitX = mouseX; lastHitY = mouseY;
+    // Morph the ring to hug the magnetised element (or revert when null).
+    function applyMagnetMorph(elm) {
+      if (!ring) return;
+      if (elm) {
+        var r = elm.getBoundingClientRect();
+        var w = Math.min(Math.round(r.width) + 14, 260);
+        var h = Math.min(Math.round(r.height) + 14, 260);
+        ring.style.width = w + 'px';
+        ring.style.height = h + 'px';
+        var br = parseFloat(window.getComputedStyle(elm).borderRadius) || 8;
+        ring.style.borderRadius = Math.min(br + 6, Math.min(w, h) / 2) + 'px';
+      } else {
+        ring.style.width = '';
+        ring.style.height = '';
+        ring.style.borderRadius = '';
+      }
+    }
 
+    // Resolve the image URL to preview for an element (data attr, <img>, or bg).
+    function resolvePreviewImage(el) {
+      var m = safeClosest(el, settings.previewSelector);
+      if (!m) return null;
+      var explicit = m.getAttribute('data-bubble-cursor-image');
+      if (explicit) return explicit;
+      var img = m.querySelector('img');
+      if (img && (img.currentSrc || img.src)) return img.currentSrc || img.src;
+      var bg = window.getComputedStyle(m).backgroundImage;
+      if (bg && bg !== 'none') {
+        var um = bg.match(/url\(["']?(.*?)["']?\)/);
+        if (um && um[1]) return um[1];
+      }
+      return null;
+    }
+
+    // Flip hover classes + magnet target for the element under the pointer.
+    // (Called once per frame from animate(), only when the pointer has moved.)
+    function updateHover(el) {
       var desired = '', label = '', mEl = null;
-      var el = document.elementFromPoint(mouseX, mouseY);
       if (el && el.closest) {
         var text = resolveHoverText(el);
         if (text && settings.hoverText !== false) { desired = 'text'; label = text; }
         else if (safeClosest(el, settings.hoverSelector)) { desired = 'hover'; }
         if (settings.magnetic) mEl = safeClosest(el, settings.hoverSelector);
       }
-      // Update the magnet target every move (independent of the class state, so
-      // gliding from one button straight to another re-targets correctly).
-      if (settings.magnetic) magnetEl = mEl;
+      // Magnetic runs even when the grow effect is off; morph only on a change.
+      if (settings.magnetic && mEl !== magnetEl) { magnetEl = mEl; applyMagnetMorph(mEl); }
 
+      if (!settings.hoverEffect) return;
       if (desired === hoverState && label === hoverLabel) return; // no change → no DOM write
-
       hoverState = desired;
       hoverLabel = label;
       root.classList.toggle('bc-hover', desired !== '');
       root.classList.toggle('bc-hover-text', desired === 'text');
       if (ringLabel) ringLabel.textContent = (desired === 'text') ? label : '';
+    }
+
+    // Show/hide the image preview for the element under the pointer.
+    function updatePreview(el) {
+      var src = el ? resolvePreviewImage(el) : null;
+      if (src === previewSrc) return;
+      previewSrc = src;
+      if (src) {
+        preview.style.backgroundImage = 'url("' + String(src).replace(/"/g, '\\"') + '")';
+        root.classList.add('bc-preview-on');
+      } else {
+        root.classList.remove('bc-preview-on');
+      }
     }
 
     var lastFrameT = nowMs();
@@ -213,6 +270,16 @@
       // whether the page runs at 30, 60 or 144 fps (the smoke sim varies it),
       // so the motion stays smooth instead of stepping unevenly.
       var f = 1 - Math.pow(1 - settings.ringSpeed, dt / 16.667);
+
+      // One hit-test per frame (only when the pointer moved) feeds hover, magnet
+      // and preview — cheap, and avoids the old mouseover/mouseout thrash.
+      if (mouseX !== lastHitX || mouseY !== lastHitY) {
+        lastHitX = mouseX; lastHitY = mouseY;
+        var hitEl = (settings.hoverEffect || settings.magnetic || preview)
+          ? document.elementFromPoint(mouseX, mouseY) : null;
+        if (settings.hoverEffect || settings.magnetic) updateHover(hitEl);
+        if (preview) updatePreview(hitEl);
+      }
 
       // Magnetic: aim at the hovered element's centre so the ring snaps onto it.
       var tx = mouseX, ty = mouseY;
@@ -238,11 +305,18 @@
         }
         ring.style.transform = tf;
       }
-      updateHover();
+
+      if (preview) {
+        previewX += (mouseX - previewX) * f;
+        previewY += (mouseY - previewY) * f;
+        preview.style.transform = 'translate3d(' + previewX + 'px,' + previewY + 'px,0) translate(-50%,-50%)';
+      }
+
       rafId = window.requestAnimationFrame(animate);
     }
 
-    if (hasFollower) {
+    var runLoop = hasFollower || !!preview;
+    if (runLoop) {
       window.addEventListener('mousemove', onMove, { passive: true });
       window.addEventListener('mouseout', function (e) {
         if (!e.relatedTarget && !e.toElement) {
@@ -254,6 +328,13 @@
       window.addEventListener('scroll', function () { lastHitX = null; }, { passive: true });
       animate();
     }
+
+    /* ---- Pause the smoke when the tab is hidden (saves CPU/battery) -- */
+    document.addEventListener('visibilitychange', function () {
+      if (!window.BubbleCursorFluid) return;
+      if (document.hidden) { window.BubbleCursorFluid.pause(); }
+      else { window.BubbleCursorFluid.resume(); }
+    });
 
     /* ---- Click burst -------------------------------------------- */
     if (settings.clickBurst) {
