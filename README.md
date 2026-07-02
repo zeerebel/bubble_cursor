@@ -106,6 +106,12 @@ php -S 127.0.0.1:8765
 * **Performance:** the simulation runs at a capped device-pixel-ratio and pauses
   cleanly on page unload.
 
+## Support the plugin
+
+Bubble Cursor is free. If it makes your site nicer, you can
+[donate / buy me a coffee](https://superdupercursor.mongphu.com/) — the same
+link is available from **Settings → Bubble Cursor** and the Plugins row.
+
 ## Credits & license
 
 * Plugin code: GPL-2.0-or-later (matching WordPress).

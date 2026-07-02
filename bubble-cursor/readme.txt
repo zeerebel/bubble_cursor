@@ -1,10 +1,11 @@
 === Bubble Cursor — Smokey Fluid Cursor ===
 Contributors: zeerebel
+Donate link: https://superdupercursor.mongphu.com/
 Tags: cursor, custom cursor, fluid, webgl, smoke, mouse, elementor
 Requires at least: 5.6
 Tested up to: 6.8
 Requires PHP: 7.2
-Stable tag: 1.1.0
+Stable tag: 1.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -60,6 +61,19 @@ settings.
 That is intentional — a fluid mouse cursor has no meaning on touch screens.
 
 == Changelog ==
+
+= 1.2.0 =
+* Performance: the fluid simulation now suspends automatically once the mouse
+  has been still long enough for the smoke to fade, and the ring follower
+  parks its animation frame when it has caught up with the pointer — an idle
+  page costs zero GPU/CPU.
+* Stability: a malformed custom hover selector no longer breaks hover
+  detection (it falls back to the default selector), and the one-time WebGL
+  capability probes now release their test textures.
+* Security hardening: the settings JSON printed into the page is now encoded
+  with HTML-safe escaping (defence in depth).
+* New: a Support/Donate panel on the settings screen and a Donate link on the
+  Plugins row.
 
 = 1.1.0 =
 * New controls: dot/ring size, ring thickness, cursor opacity, smoke opacity,
