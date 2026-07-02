@@ -3,7 +3,7 @@
  * Plugin Name:       Bubble Cursor — Smokey Fluid Cursor
  * Plugin URI:        https://github.com/zeerebel/bubble_cursor
  * Description:       Adds a colourful WebGL "smoke" fluid trail plus a dot + ring custom cursor with a "View" hover bubble — a replica of the TreeThemes "Deep" theme cursor. Works on any theme (Elementor or not). No coding required.
- * Version:           1.1.0
+ * Version:           1.2.0
  * Requires at least: 5.6
  * Requires PHP:      7.2
  * Author:            zeerebel
@@ -20,11 +20,20 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // No direct access.
 }
 
-define( 'BUBBLE_CURSOR_VERSION', '1.1.0' );
+define( 'BUBBLE_CURSOR_VERSION', '1.2.0' );
 define( 'BUBBLE_CURSOR_FILE', __FILE__ );
 define( 'BUBBLE_CURSOR_URL', plugin_dir_url( __FILE__ ) );
 define( 'BUBBLE_CURSOR_PATH', plugin_dir_path( __FILE__ ) );
 define( 'BUBBLE_CURSOR_OPTION', 'bubble_cursor_options' );
+
+/*
+ * Donation destination shown on the settings screen and in the plugin row.
+ * Replace with a direct PayPal / Buy Me a Coffee URL if preferred — this is
+ * the only place it is defined. Also filterable via `bubble_cursor_donate_url`.
+ */
+if ( ! defined( 'BUBBLE_CURSOR_DONATE_URL' ) ) {
+	define( 'BUBBLE_CURSOR_DONATE_URL', 'https://superdupercursor.mongphu.com/' );
+}
 
 /**
  * Main plugin class.
@@ -55,6 +64,21 @@ final class Bubble_Cursor {
 		add_action( 'admin_menu', array( $this, 'add_settings_page' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
 		add_filter( 'plugin_action_links_' . plugin_basename( BUBBLE_CURSOR_FILE ), array( $this, 'action_links' ) );
+		add_filter( 'plugin_row_meta', array( $this, 'row_meta' ), 10, 2 );
+	}
+
+	/**
+	 * Donation URL (constant, overridable via filter).
+	 *
+	 * @return string
+	 */
+	public static function donate_url() {
+		/**
+		 * Filter the donation URL used on the settings screen and plugin row.
+		 *
+		 * @param string $url Donation URL.
+		 */
+		return apply_filters( 'bubble_cursor_donate_url', BUBBLE_CURSOR_DONATE_URL );
 	}
 
 	/**
@@ -198,10 +222,12 @@ final class Bubble_Cursor {
 		);
 
 		// Emit typed settings (booleans/numbers preserved) before the engine loads.
+		// HEX flags keep the JSON inert inside a <script> block even if a
+		// future option ever carries markup characters.
 		$settings = $this->build_js_settings( $o );
 		wp_add_inline_script(
 			'bubble-cursor-fluid',
-			'window.BubbleCursorSettings = ' . wp_json_encode( $settings ) . ';',
+			'window.BubbleCursorSettings = ' . wp_json_encode( $settings, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT ) . ';',
 			'before'
 		);
 	}
@@ -273,6 +299,20 @@ final class Bubble_Cursor {
 		$link = '<a href="' . esc_url( $url ) . '">' . esc_html__( 'Settings', 'bubble-cursor' ) . '</a>';
 		array_unshift( $links, $link );
 		return $links;
+	}
+
+	/**
+	 * Add a Donate link to the plugin row on the Plugins screen.
+	 *
+	 * @param array  $meta Plugin row meta links.
+	 * @param string $file Plugin basename.
+	 * @return array
+	 */
+	public function row_meta( $meta, $file ) {
+		if ( plugin_basename( BUBBLE_CURSOR_FILE ) === $file ) {
+			$meta[] = '<a href="' . esc_url( self::donate_url() ) . '" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Donate ❤', 'bubble-cursor' ) . '</a>';
+		}
+		return $meta;
 	}
 
 	public function register_settings() {
@@ -369,6 +409,21 @@ final class Bubble_Cursor {
 		<div class="wrap">
 			<h1><?php esc_html_e( 'Bubble Cursor — Smokey Fluid Cursor', 'bubble-cursor' ); ?></h1>
 			<p><?php esc_html_e( 'A colourful WebGL smoke trail plus a dot + ring custom cursor with a "View" hover bubble. Tip: it needs a mouse — it is hidden on touch devices and for visitors who prefer reduced motion.', 'bubble-cursor' ); ?></p>
+
+			<div style="max-width:640px;margin:16px 0 8px;padding:14px 18px;background:#fff;border:1px solid #c3c4c7;border-left:4px solid #d63638;border-radius:4px;box-shadow:0 1px 1px rgba(0,0,0,.04);">
+				<h2 style="margin:0 0 6px;font-size:15px;"><span aria-hidden="true">❤</span> <?php esc_html_e( 'Enjoying Bubble Cursor?', 'bubble-cursor' ); ?></h2>
+				<p style="margin:0 0 10px;">
+					<?php esc_html_e( 'This plugin is free and made with love. If it makes your site nicer, a small donation keeps updates coming — thank you!', 'bubble-cursor' ); ?>
+				</p>
+				<p style="margin:0;">
+					<a class="button button-primary" href="<?php echo esc_url( self::donate_url() ); ?>" target="_blank" rel="noopener noreferrer">
+						<?php esc_html_e( '❤ Donate / Buy me a coffee', 'bubble-cursor' ); ?>
+					</a>
+					<a class="button" href="<?php echo esc_url( 'https://github.com/zeerebel/bubble_cursor' ); ?>" target="_blank" rel="noopener noreferrer" style="margin-left:6px;">
+						<?php esc_html_e( 'Plugin website', 'bubble-cursor' ); ?>
+					</a>
+				</p>
+			</div>
 			<form method="post" action="options.php">
 				<?php settings_fields( 'bubble_cursor_group' ); ?>
 				<?php $n = BUBBLE_CURSOR_OPTION; ?>

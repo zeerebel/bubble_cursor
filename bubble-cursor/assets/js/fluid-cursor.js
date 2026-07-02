@@ -68,6 +68,11 @@
     this.lastColorTime = 0;
     this.colorUpdateTimer = 0;
     this.lastUpdate = now();
+    this.lastInteraction = now();
+    this.idle = false;
+    // How long after the last pointer move the loop suspends. Slower density
+    // dissipation needs longer so the smoke fully fades before we pause.
+    this.idleTimeout = Math.max(4000, 6000 / Math.max(0.25, config.DENSITY_DISSIPATION));
 
     this._initShaders();
     this._initBlit();
@@ -148,6 +153,9 @@
     gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
     var status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.deleteFramebuffer(fbo);
+    gl.deleteTexture(texture);
     return status === gl.FRAMEBUFFER_COMPLETE;
   }
 
@@ -997,6 +1005,8 @@
     };
 
     var move = function (clientX, clientY) {
+      self.lastInteraction = now();
+      if (self.idle && self.running) self._resume();
       var pointer = self.pointers[0];
       var rect = self.canvas.getBoundingClientRect();
       var posX = clientX - rect.left;
@@ -1012,7 +1022,7 @@
       updatePointerMoveData(pointer, posX, posY, pointer.color, self.canvas);
     };
 
-    add(window, 'mousemove', function (e) { move(e.clientX, e.clientY); });
+    add(window, 'mousemove', function (e) { move(e.clientX, e.clientY); }, { passive: true });
     add(window, 'touchmove', function (e) {
       if (!e.touches || !e.touches.length) return;
       move(e.touches[0].clientX, e.touches[0].clientY);
@@ -1060,7 +1070,7 @@
     if (this.unsupported || this.running) return;
     this.running = true;
     var self = this;
-    var loop = function () {
+    this._loop = function () {
       if (!self.running) return;
       try {
         self.frame();
@@ -1069,14 +1079,40 @@
         self.stop();
         return;
       }
-      self._raf = window.requestAnimationFrame(loop);
+      // Nothing has moved for a while and the smoke has fully faded: park the
+      // loop so an idle page costs zero GPU/CPU. move() resumes it.
+      if (now() - self.lastInteraction > self.idleTimeout) {
+        self._suspend();
+        return;
+      }
+      self._raf = window.requestAnimationFrame(self._loop);
     };
     this.lastUpdate = now();
-    this._raf = window.requestAnimationFrame(loop);
+    this.lastInteraction = now();
+    this._raf = window.requestAnimationFrame(this._loop);
+  };
+
+  FluidSim.prototype._suspend = function () {
+    var gl = this.gl;
+    this.idle = true;
+    this._raf = null;
+    // Wipe any residual (invisibly faint) dye so the parked canvas is fully
+    // transparent.
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.clearColor(0.0, 0.0, 0.0, 0.0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+  };
+
+  FluidSim.prototype._resume = function () {
+    if (!this.running || !this.idle || this.contextLost) return;
+    this.idle = false;
+    this.lastUpdate = now();
+    this._raf = window.requestAnimationFrame(this._loop);
   };
 
   FluidSim.prototype.stop = function () {
     this.running = false;
+    this.idle = false;
     if (this._raf) window.cancelAnimationFrame(this._raf);
     this._raf = null;
   };

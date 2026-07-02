@@ -54,6 +54,14 @@
       fluid: s.fluid || {}
     };
 
+    // A malformed hover selector would make every closest() call throw, so
+    // validate it once and fall back to the built-in default.
+    try {
+      document.documentElement.matches(settings.hoverSelector);
+    } catch (selErr) {
+      settings.hoverSelector = 'a[href], button:not(:disabled), input[type="submit"], input[type="button"], .elementor-button, [data-bubble-cursor-hover]';
+    }
+
     if (settings.hideOnTouch && isTouch()) {
       return; // bail entirely on touch devices
     }
@@ -119,6 +127,7 @@
       if (dot) {
         dot.style.transform = 'translate3d(' + mouseX + 'px,' + mouseY + 'px,0) translate(-50%,-50%)';
       }
+      wakeRing();
     }
 
     function animate() {
@@ -127,7 +136,21 @@
       if (ring) {
         ring.style.transform = 'translate3d(' + ringX + 'px,' + ringY + 'px,0) translate(-50%,-50%)';
       }
+      // Once the ring has caught up with the pointer, park the loop instead
+      // of burning a rAF per frame while the mouse is still.
+      if (Math.abs(mouseX - ringX) < 0.1 && Math.abs(mouseY - ringY) < 0.1) {
+        ringX = mouseX;
+        ringY = mouseY;
+        rafId = null;
+        return;
+      }
       rafId = window.requestAnimationFrame(animate);
+    }
+
+    function wakeRing() {
+      if (ring && rafId === null) {
+        rafId = window.requestAnimationFrame(animate);
+      }
     }
 
     if (hasFollower) {
@@ -140,7 +163,7 @@
       });
       document.addEventListener('mousedown', function () { root.classList.add('bc-down'); });
       document.addEventListener('mouseup', function () { root.classList.remove('bc-down'); });
-      if (ring) animate();
+      wakeRing();
     }
 
     /* ---- Hover state + "View" text ------------------------------- */
