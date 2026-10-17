@@ -1,3 +1,14 @@
+> ## Where this repo fits (added 2026-10-17)
+>
+> Owner: **zeerebel** (Mark Phu). **Master index of every repo → [REPOS.md in zeerebel/reframe](https://github.com/zeerebel/reframe/blob/main/REPOS.md)** — read it first whenever you are unsure which repo is current.
+>
+> | | |
+> | --- | --- |
+> | **What this is** | Bubble Cursor — WordPress plugin, WebGL smoke trail + dot/ring cursor with "View" hover bubble. v1.1.0. Plugin lives in the `bubble-cursor/` subfolder; `demo/`, `Exposure.html` and the screenshot are reference material. |
+> | **Status** | **CANONICAL for the standalone plugin** — but the *identical* code is already built into the Reframe theme as Cursor Style "Bubble". |
+> | **Planned repo name** | `flux-bubble-cursor` |
+> | **With the Reframe theme** | ✅ Use **either** the theme's Cursor Style = Bubble **or** this plugin with the theme cursor Off — never both (two cursors). |
+> | **Related repos** | Reframe theme: `zeerebel/reframe` (contains this code in assets/js/bubble-cursor.js); other cursor repos |
 # Bubble Cursor — replicating the Deep theme "smokey" cursor
 
 This repo answers a question: **can the cursor on
