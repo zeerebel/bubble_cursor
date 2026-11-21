@@ -38,7 +38,8 @@
     BLOOM_THRESHOLD: 0.6,
     BLOOM_SOFT_KNEE: 0.7,
     SUNRAYS: false,
-    MAX_DPR: 2
+    MAX_DPR: 2,
+    IDLE_MS: 3000
   };
 
   function FluidSim(canvas, userConfig) {
@@ -50,6 +51,8 @@
     this.canvas = canvas;
     this.config = config;
     this.running = false;
+    this.sleeping = false;
+    this.lastInputAt = now();
     this._raf = null;
     this._listeners = [];
 
@@ -91,7 +94,11 @@
     var halfFloat, supportLinearFiltering;
     if (isWebGL2) {
       gl.getExtension('EXT_color_buffer_float');
-      supportLinearFiltering = gl.getExtension('OES_texture_float_linear');
+      gl.getExtension('EXT_color_buffer_half_float');
+      // Every texture here is half-float, and linear filtering of 16F formats
+      // is core in WebGL2. OES_texture_float_linear only concerns 32F, so it
+      // must not gate this (it is missing on many mobile / Safari GPUs).
+      supportLinearFiltering = true;
     } else {
       halfFloat = gl.getExtension('OES_texture_half_float');
       supportLinearFiltering = gl.getExtension('OES_texture_half_float_linear');
@@ -998,6 +1005,8 @@
 
     var move = function (clientX, clientY) {
       var pointer = self.pointers[0];
+      self.lastInputAt = now();
+      if (self.sleeping) self.wake();
       var rect = self.canvas.getBoundingClientRect();
       var posX = clientX - rect.left;
       var posY = clientY - rect.top;
@@ -1035,6 +1044,36 @@
       self.contextLost = true;
       self.stop();
     });
+
+    // preventDefault() above lets the browser restore the context later (GPU
+    // reset / GPU switch). Rebuild every GL resource and carry on.
+    add(self.canvas, 'webglcontextrestored', function () {
+      self._rebuild();
+    });
+  };
+
+  FluidSim.prototype._rebuild = function () {
+    var ctx = getWebGLContext(this.canvas);
+    if (!ctx) { this.unsupported = true; this.contextLost = true; return; }
+    this.gl = ctx.gl;
+    this.ext = ctx.ext;
+    if (!this.ext.supportLinearFiltering) {
+      this.config.DYE_RESOLUTION = 512;
+      this.config.SHADING = false;
+      this.config.BLOOM = false;
+    }
+    // All old GL objects died with the context; drop the references.
+    this.dye = this.velocity = this.pressure = null;
+    this.divergence = this.curl = this.bloom = null;
+    this.bloomFramebuffers = [];
+    this.pointers = [createPointer()];
+    this._initShaders();
+    this._initBlit();
+    this.resize();
+    this.initFramebuffers();
+    this.contextLost = false;
+    this.lastInputAt = now();
+    this.start();
   };
 
   FluidSim.prototype.frame = function () {
@@ -1056,12 +1095,23 @@
     this.render(null);
   };
 
+  // How long (ms) the loop keeps running after the last pointer movement:
+  // long enough for the smoke to fade out, never less than IDLE_MS.
+  FluidSim.prototype.idleAfter = function () {
+    var c = this.config;
+    var fade = Math.min(c.DENSITY_DISSIPATION, c.VELOCITY_DISSIPATION);
+    var ms = fade > 0 ? (4.6 / fade) * 1000 : 12000;
+    return Math.max(c.IDLE_MS, Math.min(ms, 12000));
+  };
+
   FluidSim.prototype.start = function () {
     if (this.unsupported || this.running) return;
     this.running = true;
+    this.sleeping = false;
     var self = this;
-    var loop = function () {
-      if (!self.running) return;
+    this._loop = function () {
+      self._raf = null;
+      if (!self.running || self.sleeping) return;
       try {
         self.frame();
       } catch (err) {
@@ -1069,14 +1119,40 @@
         self.stop();
         return;
       }
-      self._raf = window.requestAnimationFrame(loop);
+      if (now() - self.lastInputAt > self.idleAfter()) {
+        self._sleep();
+        return;
+      }
+      self._raf = window.requestAnimationFrame(self._loop);
     };
     this.lastUpdate = now();
-    this._raf = window.requestAnimationFrame(loop);
+    this.lastInputAt = now();
+    this._raf = window.requestAnimationFrame(this._loop);
+  };
+
+  // Pointer idle and the smoke has faded: stop drawing until the next move.
+  FluidSim.prototype._sleep = function () {
+    this.sleeping = true;
+    var gl = this.gl;
+    if (gl && !this.contextLost) {
+      gl.disable(gl.BLEND);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.clearColor(0, 0, 0, 1);
+    }
+  };
+
+  FluidSim.prototype.wake = function () {
+    if (!this.running || !this.sleeping || this.contextLost) return;
+    this.sleeping = false;
+    this.lastUpdate = now();
+    if (!this._raf) this._raf = window.requestAnimationFrame(this._loop);
   };
 
   FluidSim.prototype.stop = function () {
     this.running = false;
+    this.sleeping = false;
     if (this._raf) window.cancelAnimationFrame(this._raf);
     this._raf = null;
   };
@@ -1126,6 +1202,18 @@
     stop: function () {
       if (instance) { instance.destroy(); instance = null; }
     },
-    isRunning: function () { return !!(instance && instance.running); }
+    isRunning: function () { return !!(instance && instance.running); },
+    // Capability probe (for tests / diagnostics): which GL path is live.
+    info: function () {
+      if (!instance || !instance.gl) return null;
+      return {
+        webgl2: typeof window.WebGL2RenderingContext !== 'undefined' && instance.gl instanceof window.WebGL2RenderingContext,
+        linear: !!instance.ext.supportLinearFiltering,
+        dyeResolution: instance.config.DYE_RESOLUTION,
+        bloom: !!instance.config.BLOOM
+      };
+    },
+    // True while the loop is parked because nothing has moved (see IDLE_MS).
+    isSleeping: function () { return !!(instance && instance.running && instance.sleeping); }
   };
 })(window, document);

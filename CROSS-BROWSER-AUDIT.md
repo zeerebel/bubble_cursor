@@ -126,6 +126,29 @@ Findings: **12 total = 1 High, 7 Medium, 4 Low.** Nine were reproduced by runnin
 
 ---
 
+## Resolved in 1.2.0
+
+All 12 findings were addressed in 1.2.0. "Test" names the section of `tests/run.js` (Chromium, `[n]`) or `tests/php-harness.php` (stubbed WordPress, `[X]`) that covers it; run both with `./tests/run.sh`. **Firefox, Safari and iOS WebKit were not run** (not available here), real WordPress, real optimizer plugins, the real page-builder editors and real bfcache were not exercised either; the "Ran / by code reading" labels above still apply to everything outside the tests listed here.
+
+| # | Status | What changed | Test |
+|---|--------|--------------|------|
+| 1 | Fixed | Visibility is `data-bc-visible` on the dot/ring, hover is `data-bc-state` on the ring (`data-bc-hover` on the dot). `html.bc-*` classes are markers only, re-asserted by a `MutationObserver` (disconnected on `pagehide`, reconnected on persisted `pageshow`). `--bc-opacity` moved onto the elements. | `[2]` rewrite after load and at DOMContentLoaded, mid-session wipe, wipe while hovering |
+| 2 | Fixed | PHP `script_loader_tag` filter adds the opt-out attributes to both handles (and their inline scripts) and mirrors the settings JSON into `data-bc-settings` on `#bubble-cursor-js`. JS reads global, then attribute, then defaults with one `console.warn`. The inline global is kept. Not tested against real WP Rocket / LiteSpeed / Rocket Loader / Autoptimize. | `[3]` (stripped inline script, neither channel), `[C]` (tag output, escaping, idempotence) |
+| 3 | Fixed | `bc-hide-native` is only set while a follower exists, motion is allowed and the cursor is visible; removed on teardown. `sanitize()` forces `hide_native` to 0 with both followers off, and the JS setting is neutralised for old saved options. Settings text updated. | `[4]`, `[D]` |
+| 4 | Fixed | `pagehide` stops everything (loop, fluid, observer); persisted `pageshow` rebuilds the fluid sim on a fresh canvas, restarts the ring and re-attaches the observer. Verified with synthetic events only. | `[5]` |
+| 5 | Fixed | `should_load()` returns false for the Customizer preview, `vc_editable`, `vc_is_page_editable()`/`vc_is_inline()`, Elementor preview mode and `?elementor-preview`, `et_fb`, `fl_builder`, `ct_builder`, `brizy-edit`(`-iframe`). JS also bails on `body.elementor-editor-active` and the same query args. Not run inside a real editor. | `[B]` (PHP), `[12]` (JS) |
+| 6 | Fixed | JS once-only guard (`window.__bubbleCursorBooted` or existing elements); PHP returns early if `BUBBLE_CURSOR_VERSION` is defined and the class/function declarations are guarded. The Reframe theme's own marker class was not checked, so coexistence relies on the DOM-element check. | `[6]`, `[A]` |
+| 7 | Fixed | Gate is `(any-hover: hover) and (any-pointer: fine)` with the old sniff as fallback where `any-hover` is unsupported. Devices that still report touch-only start dormant and switch on after a real mouse (`pointerType === "mouse"`) travels a few pixels or clicks; this was needed because Chromium's `hasTouch` emulation reports no hover/fine pointer, and because Chromium synthesises one mouse `pointermove` at load even on emulated phones (a single event is therefore not trusted). | `[7]` (hasTouch desktop dormant then active; iPhone 13, Pixel 7, iPad gen 7, iPad Pro 11 stay empty, including after taps) |
+| 8 | Fixed | The fluid loop parks itself after the pointer has been idle for `max(3 s, ~4.6/fade s)` (capped at 12 s, so the smoke has faded), clears the canvas, and `mousemove`/`touchmove` wake it. The ring loop parks when it converges (under 0.05 px). Measured as draw calls and style writes in software GL; GPU/battery effect not measured. | `[8]` |
+| 9 | Fixed | Selector validated once at init; falls back to the default with one `console.warn`; mouse handlers are also wrapped in try/catch. | `[9]` |
+| 10 | Fixed | `box-sizing: border-box` on dot and ring; hover sizes are `calc(var(--bc-ring-size) * 1.6 / 2.25)`; `--bc-hover-fill`, `--bc-text-fill`, `--bc-label-color` set from the ring colour; canvas uses `inset: 0; width/height: 100%`. The `100vw` scrollbar case was not run (headless uses overlay scrollbars); only that the canvas equals the viewport. | `[1]`, `[10]` |
+| 11 | Fixed (partly unverified) | `webglcontextrestored` rebuilds the sim (tested with `WEBGL_lose_context`). The WebGL2 path no longer requires `OES_texture_float_linear` (half-float linear filtering is core in WebGL2); the 512/no-bloom fallback is kept for WebGL1 without the half-float linear extension. Not verified on real Safari/iOS hardware. | `[11]` |
+| 12 | Fixed | Settings save (`update_option_`/`add_option_`) purges WP Rocket, LiteSpeed, W3TC, Autoptimize and SG Optimizer when present; `uninstall.php` loops `get_sites()` and also calls `delete_site_option`; asset `ver` is `1.2.0-<filemtime>`. Not run on real WordPress or multisite. | `[E]`, `[F]`, `[C]` |
+
+Known limits of the fixes: the idle timeout is wall-clock while the simulation advances per frame, so on a very slow GPU the smoke can still be visible when the loop parks (the canvas is then cleared); the Reframe theme cursor and real optimizer plugins were not tested; `hideOnTouch=false` still shows the cursor after a tap on phones, as before.
+
+---
+
 ## Prompt for the fix session
 
 Paste everything below into a new thread.
