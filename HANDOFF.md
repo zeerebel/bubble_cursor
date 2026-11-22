@@ -1,0 +1,39 @@
+# Bubble Cursor — Handoff
+
+<!-- handoff:start -->
+## START HERE: current status and how to resume (updated Nov 22, 2026)
+
+**Bubble Cursor**, version **1.2.0**, repo `zeerebel/bubble_cursor`, open draft PR `zeerebel/bubble_cursor#7` on branch `claude/vigilant-cannon-o5rz3s` (not merged to `main`). If you were told to "read the handoff", read this block, then `CLAUDE.md` (shared rules and the Flux-suite hardening checklist), then `CROSS-BROWSER-AUDIT.md` if present, then the rest of this file.
+
+### What this is
+A custom cursor: a dot and ring follower plus an optional WebGL fluid/smoke trail (`fluid-cursor.js`). Plugin folder is `bubble-cursor/`. The Reframe theme has a built-in bubble cursor; only one should be active.
+
+### Where things are
+- `bubble-cursor/bubble-cursor.php`, `assets/js/bubble-cursor.js`, `assets/js/fluid-cursor.js`, `assets/css/bubble-cursor.css`; filter `bubble_cursor_should_load`; constant `BUBBLE_CURSOR_VERSION`.
+- **Do not modify** `Exposure.html`, the `demo/` images or the screenshot jpeg (owner reference material).
+
+### How to test
+- `./tests/run.sh` (php -l, PHP harness, node --check, Chromium suite; 63 PHP + 111 browser checks). See `tests/README.md`.
+
+### Status
+Audit (12 findings) fixed in 1.2.0: visible state no longer lives only in `<html>` classes, settings via `data-bc-settings`, optimizer opt-outs, native cursor hidden only after the follower exists, bfcache restore, builder guards, once-only guard, touch-laptop support (dormant until a real mouse moves), idle smoke loop sleeps, WebGL context recovery, cache purge on save, multisite uninstall. `CROSS-BROWSER-AUDIT.md` has the findings and a 'Resolved in 1.2.0' section.
+
+### Open items and unverified claims
+- The WebGL2 half-float linear-filtering change is unverified on Safari/iOS hardware.
+- Firefox, Safari, real WordPress, optimizer plugins, real bfcache not run.
+
+### Suggested next steps (owner decides)
+1. Review the draft PR diff, then mark it ready and merge to `main` when satisfied (nothing is merged yet).
+2. Install on a **staging copy** of the owner's Salient site, one plugin at a time; confirm in real Chrome, **Firefox and Safari incl. the owner's phone** (never run in this environment).
+3. Check the open items above, especially anything marked 'from memory' or 'unverified'.
+4. Take a backup before updating a live site; clear every cache (plugin, host, CDN) after updating. A stale cache can show the old behaviour.
+
+### Suite roadmap (owner decisions pending)
+
+The owner wants a premium portfolio look in the same vein as the Flux plugins. Proposed, **not started**: a shared **Flux Core** plugin that loads GSAP once and exposes it to the others, then **Flux Split** (SplitText + ScrollTrigger line/char reveals), **Flux Pin** (pinned/horizontal sections), **Flux Morph** (Flip), **Flux Draw** (DrawSVG/MorphSVG), **Flux Magnet** (Inertia/Observer), **Flux Scramble**, **Flux Marquee**. Facts checked: the npm package `gsap` 3.15.1 ships every plugin (SplitText, ScrollSmoother, MorphSVG, DrawSVG, Flip, Inertia, Observer, ScrambleText...) under a 'no charge' licence; read gsap.com/standard-license before bundling in anything sold. Open questions for the owner: one shared core or standalone plugins that each bundle GSAP; the portfolio URL or screenshots to match. Only one thing may own scrolling (Lenis, ScrollSmoother and Salient's own smooth scroll conflict); never overwrite a host `window.gsap`.
+
+### Honest limits
+Everything was tested in **Chromium only** with emulation (phones/tablets/touch/reduced motion/RTL) and stubbed WordPress. Firefox, Safari/WebKit, Samsung Internet, real iOS, real Salient, real optimizer plugins and page-builder editors were **not** run unless this file says so for a specific item.
+<!-- handoff:end -->
+
+This repo had no earlier HANDOFF.md. For deeper detail read `README.md`, `readme.txt`, `CROSS-BROWSER-AUDIT.md` (findings and a 'Resolved' section) and the source files listed under 'Where things are'.
