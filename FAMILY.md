@@ -11,21 +11,40 @@ each other, and one way to add the next plugin.
 
 ## The members
 
-| Plugin (final repo name) | Group | What it does |
-| --- | --- | --- |
-| `flux-reel` | ui | Scroll timecode in the header, film-style menu overlay, footer reel |
-| `flux-backgrounds` | visual | Animated WebGL backgrounds (12 modes) |
-| `flux-preloader` | visual | Intro splash that counts up while the page loads |
-| `flux-reveal` | visual | Blur-in scroll reveals for headings and sections |
-| `flux-smooth-scroll` | scroll | Weighted smooth scrolling (Lenis) |
-| `flux-scroll-progress` | scroll | Slim reading-progress bar |
-| `flux-jelly-cursor` | **cursor** | Elastic jelly blob cursor |
-| `flux-bubble-cursor` | **cursor** | Dot, ring and smoke-trail cursor |
-| `super-duper-cursor` | **cursor** | Dual-layer cursor that reacts to what you hover (WordPress.org edition) |
-| `super-duper-cursor-pro` | **cursor** | Dual and jelly cursor engines in one plugin |
+Final names are the target; until a repo is renamed on GitHub the repo name in the second column
+is the live one. Versions change often: the **Flux** dashboard on a site lists what is active, and
+`tools/refresh-family-docs.py` regenerates the version tables in every repo's docs.
+
+| Plugin (final name) | Repo today | Group | What it does |
+| --- | --- | --- | --- |
+| `flux-reel` | `zeerebel/kurato` (`flux-reel/` folder; move to its own repo) | ui | Scroll timecode in the header, film-style menu overlay, footer reel |
+| `flux-backgrounds` | `zeerebel/flux-backgrounds` | visual | Animated WebGL backgrounds (12 modes) |
+| `flux-preloader` | `zeerebel/flux-preloader` | visual | Intro splash that counts up while the page loads |
+| `flux-reveal` | `zeerebel/flux-reveal` | visual | Blur-in scroll reveals for headings and sections |
+| `flux-smooth-scroll` | `zeerebel/fluxsmoothscroll` | scroll | Weighted smooth scrolling (Lenis) |
+| `flux-scroll-progress` | `zeerebel/fluxscrollprogress` | scroll | Slim reading-progress bar |
+| `flux-jelly-cursor` | `zeerebel/fluxjellycursor` | **cursor** | Elastic jelly blob cursor |
+| `flux-bubble-cursor` | `zeerebel/bubble_cursor` | **cursor** | Dot, ring and smoke-trail cursor |
+| `super-duper-cursor` | `zeerebel/super-duper-cursor` | **cursor** | Dual-layer cursor that reacts to what you hover (WordPress.org edition, no shared kit) |
+| `super-duper-cursor-pro` | `zeerebel/super-duper-cursor-pro` | **cursor** | Dual and jelly cursor engines in one plugin |
 
 Not in the family: `TM-Pointer` (someone else's CodeCanyon plugin), the archived
-`super-cursor-hybrid` and `super-duper-cursor-v2.0.4a`, the Reframe theme.
+`super-cursor-hybrid`, `super-duper-cursor-v2.0.4a` (GSAP edition, superseded, archive
+recommended), the Reframe theme.
+
+### Siblings that touch each other
+
+- **Scrolling:** `flux-reel` (timecode), `flux-scroll-progress` and `flux-reveal` read the window
+  scroll; `flux-smooth-scroll` (Lenis) keeps scrolling on the window. A theme's own smooth scroll
+  must be off when `flux-smooth-scroll` is on. These pairings are expected to work but were not
+  tested together.
+- **Cursors:** the four cursor plugins are mutually exclusive (the one-cursor rule). `super-duper-cursor-pro`
+  contains a dual engine ported from `super-duper-cursor` and a jelly engine ported from
+  `flux-jelly-cursor`. `super-duper-cursor` and the archived GSAP edition share function names and must
+  never be active together.
+- **Layers:** `flux-backgrounds` is a fixed canvas behind the content; `flux-reel` draws a bar and
+  overlay (default z-index 99000); cursors draw above everything; `flux-preloader` covers all of it
+  until the page has loaded (with a failsafe so it can never trap a visitor).
 
 ## How they fit together
 
@@ -103,6 +122,14 @@ accepted; anything else is dropped.
 - **WordPress.org.** `super-duper-cursor` is meant for the plugin directory, so it does not use
   the shared kit (the directory requires each plugin's text domain to match its own slug, and
   discourages extra admin menus). It keeps its own support box and links to this family.
+
+## Keeping the family docs in sync
+
+The sibling tables in every repo's `CLAUDE.md`, `HANDOFF.md` and `README.md` are generated:
+run `python3 tools/refresh-family-docs.py` (in the hub folder `flux-family-hub`, to become the repo
+`zeerebel/flux-family`), review `git diff` in each repo, commit and push. Run it whenever a
+version, a repo name or the member list changes. `tools/sync-family.sh` copies the kit and this
+file to plugin repos.
 
 ## Where the details live
 

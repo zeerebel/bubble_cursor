@@ -5,6 +5,17 @@
 
 **Bubble Cursor**, version **1.3.0**, repo `zeerebel/bubble_cursor`, open draft PR `zeerebel/bubble_cursor#7` on branch `claude/vigilant-cannon-o5rz3s` (not merged to `main`). If you were told to "read the handoff", read this block, then `CLAUDE.md` (shared rules and the Flux-suite hardening checklist), then `CROSS-BROWSER-AUDIT.md` if present, then the rest of this file.
 
+<!-- family:start -->
+### Family context (siblings)
+
+This plugin is one of the **Flux family**: see `FAMILY.md` (identical in every sibling repo) and the sibling table in `CLAUDE.md`. Short version: `flux-reel` (ui), `flux-backgrounds` (visual), `flux-preloader` (visual), `flux-reveal` (visual), `flux-smooth-scroll` (scroll), `flux-scroll-progress` (scroll), `flux-jelly-cursor` (cursor), `super-duper-cursor` (cursor), `super-duper-cursor-pro` (cursor).
+
+- One of four cursor plugins: only ONE may be active. The Reframe theme has the same bubble cursor built in (Cursor Style "Bubble"): use the theme style or this plugin, never both.
+- Its plugin lives in the `bubble-cursor/` subfolder (the kit is in `bubble-cursor/includes/flux-family/`); the repo root also holds owner reference files that must not be changed.
+
+If you change anything a sibling also depends on (scrolling, z-index, cursor hiding, admin menus, the shared kit in `includes/flux-family/`), follow "Working across the family" in `CLAUDE.md` and report which siblings you checked.
+<!-- family:end -->
+
 ### What this is
 A custom cursor: a dot and ring follower plus an optional WebGL fluid/smoke trail (`fluid-cursor.js`). Plugin folder is `bubble-cursor/`. The Reframe theme has a built-in bubble cursor; only one should be active.
 

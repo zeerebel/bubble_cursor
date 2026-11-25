@@ -37,18 +37,40 @@ Audit (12 findings) fixed in 1.2.0: visible state no longer lives only in `<html
 - The owner works from a phone through Claude Code on the web. Keep replies short and plain: what changed, what was tested, what was not.
 - **Reply convention:** the owner's own `CLAUDE.md` asks that every reply include the word "sensei". Do that if you see that file's rule in your instructions.
 
-## The Flux plugin suite (sibling repos, all by the same owner)
+## The Flux family (you have siblings)
 
-- `zeerebel/kurato` (flux-reel/): Flux Reel: scroll timecode, menu overlay with preview monitor, footer reel
-- `zeerebel/flux-backgrounds` (repo root): Animated WebGL backgrounds
-- `zeerebel/flux-preloader` (repo root): Intro preloader
-- `zeerebel/flux-reveal` (repo root): Blur-in scroll reveals
-- `zeerebel/fluxjellycursor` (repo root): Jelly cursor
-- `zeerebel/fluxscrollprogress` (repo root): Reading-progress bar
-- `zeerebel/fluxsmoothscroll` (repo root): Smooth scroll (Lenis)
-- `zeerebel/bubble_cursor` (bubble-cursor/): Bubble/smoke cursor
-- `zeerebel/super-duper-cursor-v2.0.4a` (repo root): Dual cursor, GSAP-based (v3.0.x line)
-- `zeerebel/super-duper-cursor-pro` (repo root): Dual (library-free) + jelly cursor (v4.x line)
+This repo is one member of the **Flux family** of WordPress plugins by the same owner. Read `FAMILY.md` (the identical file sits in every sibling repo): it explains how the plugins fit together, the shared kit, the one-cursor rule and what to check before selling. Versions below were read from each plugin header on 2026-11-25.
+
+| Plugin | Repo | Group | Version | What it does |
+| --- | --- | --- | --- | --- |
+| Flux Reel | [`zeerebel/kurato`](https://github.com/zeerebel/kurato) (in the `flux-reel/` folder of the Kurato repo; move to its own `flux-reel` repo) | ui | 1.3.0 | Scroll timecode, film-style menu overlay and footer reel |
+| Flux Backgrounds | [`zeerebel/flux-backgrounds`](https://github.com/zeerebel/flux-backgrounds) | visual | 0.10.0 | Animated WebGL backgrounds (12 modes) |
+| Flux Preloader | [`zeerebel/flux-preloader`](https://github.com/zeerebel/flux-preloader) | visual | 1.5.0 | Intro splash that counts up while the page loads |
+| Flux Reveal | [`zeerebel/flux-reveal`](https://github.com/zeerebel/flux-reveal) | visual | 1.8.0 | Blur-in scroll reveals for headings and sections |
+| Flux Smooth Scroll | [`zeerebel/fluxsmoothscroll`](https://github.com/zeerebel/fluxsmoothscroll) (rename the repo to `flux-smooth-scroll`) | scroll | 1.3.0 | Weighted smooth scrolling (Lenis) |
+| Flux Scroll Progress | [`zeerebel/fluxscrollprogress`](https://github.com/zeerebel/fluxscrollprogress) (rename the repo to `flux-scroll-progress`) | scroll | 1.4.0 | Slim reading-progress bar |
+| Flux Jelly Cursor | [`zeerebel/fluxjellycursor`](https://github.com/zeerebel/fluxjellycursor) (rename the repo to `flux-jelly-cursor`) | cursor | 1.4.0 | Elastic jelly blob cursor |
+| **Flux Bubble Cursor (you)** | [`zeerebel/bubble_cursor`](https://github.com/zeerebel/bubble_cursor) (rename the repo to `flux-bubble-cursor`) | cursor | 1.3.0 | Dot, ring and smoke-trail cursor |
+| Super Duper Cursor | [`zeerebel/super-duper-cursor`](https://github.com/zeerebel/super-duper-cursor) | cursor | 3.1.2 | Dual-layer cursor that reacts to what you hover (WordPress.org edition, no shared kit) |
+| Super Duper Cursor Pro | [`zeerebel/super-duper-cursor-pro`](https://github.com/zeerebel/super-duper-cursor-pro) | cursor | 4.3.0 | Dual and jelly cursor engines in one plugin |
+
+Not in the family:
+- `super-duper-cursor-v2.0.4a`: GSAP edition of the dual cursor (3.0.x). **Not in the family:** superseded, archive recommended. Never run it next to `super-duper-cursor` (same function names, fatal).
+- `super-cursor-hybrid`: Earlier GSAP cursor. **Not in the family:** archived/superseded.
+- `TM-Pointer`: A third-party CodeCanyon plugin (author egemenerd). **Not in the family**, not yours to publish.
+
+### How you relate to your siblings
+
+- One of four cursor plugins: only ONE may be active. The Reframe theme has the same bubble cursor built in (Cursor Style "Bubble"): use the theme style or this plugin, never both.
+- Its plugin lives in the `bubble-cursor/` subfolder (the kit is in `bubble-cursor/includes/flux-family/`); the repo root also holds owner reference files that must not be changed.
+
+### Working across the family
+
+- A change here can matter to a sibling: if you touch scrolling, z-index, cursor hiding, admin menus or the shared kit, read the sibling rows above and say in your report which ones you checked.
+- **The shared kit** (`includes/flux-family/` in each plugin, except `super-duper-cursor`) is the same two files everywhere. Do not edit your copy alone: change one copy, run `php tests/test-family-kit.php`, copy the two files and the test to every sibling, bump the kit version in `core.php`, and re-run each sibling's suite. The family docs are regenerated from one script (`tools/refresh-family-docs.py` in the `flux-family-hub` folder if present, otherwise ask the owner).
+- Names: the final names in the table are the target; until a repo is renamed on GitHub, the repo name above is the live one.
+
+### Rules that apply across the family
 
 All were audited for cross-browser and host-theme robustness in Nov 2026, then fixed from those audits. The recurring weaknesses found across the suite, and now the **checklist for any change here**:
 

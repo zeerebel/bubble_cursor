@@ -164,3 +164,22 @@ WebKit are **not** covered by it.
 
 `Exposure.html` and the screenshot in this repo are the original reference
 material used to identify the effect.
+
+<!-- flux-family:start -->
+## The Flux family
+
+This plugin has siblings: the **Flux family** are small WordPress plugins that work on their own and work together, with a shared "Flux" admin dashboard, one support card and one set of rules (see [FAMILY.md](./FAMILY.md)). Only run one custom-cursor plugin at a time.
+
+| Plugin | Repo | Group | Version |
+| --- | --- | --- | --- |
+| Flux Reel | [`zeerebel/kurato`](https://github.com/zeerebel/kurato) | ui | 1.3.0 |
+| Flux Backgrounds | [`zeerebel/flux-backgrounds`](https://github.com/zeerebel/flux-backgrounds) | visual | 0.10.0 |
+| Flux Preloader | [`zeerebel/flux-preloader`](https://github.com/zeerebel/flux-preloader) | visual | 1.5.0 |
+| Flux Reveal | [`zeerebel/flux-reveal`](https://github.com/zeerebel/flux-reveal) | visual | 1.8.0 |
+| Flux Smooth Scroll | [`zeerebel/fluxsmoothscroll`](https://github.com/zeerebel/fluxsmoothscroll) | scroll | 1.3.0 |
+| Flux Scroll Progress | [`zeerebel/fluxscrollprogress`](https://github.com/zeerebel/fluxscrollprogress) | scroll | 1.4.0 |
+| Flux Jelly Cursor | [`zeerebel/fluxjellycursor`](https://github.com/zeerebel/fluxjellycursor) | cursor | 1.4.0 |
+| **Flux Bubble Cursor (this plugin)** | [`zeerebel/bubble_cursor`](https://github.com/zeerebel/bubble_cursor) | cursor | 1.3.0 |
+| Super Duper Cursor | [`zeerebel/super-duper-cursor`](https://github.com/zeerebel/super-duper-cursor) | cursor | 3.1.2 |
+| Super Duper Cursor Pro | [`zeerebel/super-duper-cursor-pro`](https://github.com/zeerebel/super-duper-cursor-pro) | cursor | 4.3.0 |
+<!-- flux-family:end -->
