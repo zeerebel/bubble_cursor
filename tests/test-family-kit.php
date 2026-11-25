@@ -6,7 +6,19 @@
  *
  * The kit is found in ../kit/includes/flux-family (hub repo) or ../includes/flux-family (plugin repo).
  */
-$root = is_dir( __DIR__ . '/../kit/includes/flux-family' ) ? __DIR__ . '/../kit/includes/flux-family' : __DIR__ . '/../includes/flux-family';
+// Find the kit: the hub (../kit/...), a plugin repo (../includes/...) or a plugin in a subfolder
+// (../<plugin>/includes/..., e.g. bubble_cursor and Kurato/flux-reel).
+$root = '';
+foreach ( array_merge( array( __DIR__ . '/../kit/includes/flux-family', __DIR__ . '/../includes/flux-family' ), (array) glob( __DIR__ . '/../*/includes/flux-family' ) ) as $candidate ) {
+	if ( is_file( $candidate . '/core.php' ) ) {
+		$root = $candidate;
+		break;
+	}
+}
+if ( '' === $root ) {
+	fwrite( STDERR, "Flux Family Kit not found next to this test.\n" );
+	exit( 1 );
+}
 
 $scenarios = array( 'frontend', 'highest', 'dashboard', 'conflict', 'links', 'hide', 'nocore', 'noaccess', 'empty' );
 
