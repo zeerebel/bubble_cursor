@@ -13,6 +13,17 @@ for f in bubble-cursor/*.php tests/*.php; do php -l "$f" || status=1; done
 echo "== PHP harness =="
 php tests/php-harness.php || status=1
 
+echo "== Flux Family Kit test =="
+# The kit test looks for the kit in ../includes/flux-family, but this plugin keeps it in
+# bubble-cursor/includes/flux-family. Run an unmodified copy of the test from a scratch dir
+# whose includes/ points at the plugin folder's includes/.
+KIT_TMP="$(mktemp -d)"
+mkdir -p "$KIT_TMP/tests"
+cp tests/test-family-kit.php "$KIT_TMP/tests/"
+ln -s "$PWD/bubble-cursor/includes" "$KIT_TMP/includes"
+php "$KIT_TMP/tests/test-family-kit.php" || status=1
+rm -rf "$KIT_TMP"
+
 echo "== JS syntax =="
 for f in bubble-cursor/assets/js/*.js tests/run.js; do node --check "$f" || status=1; done
 

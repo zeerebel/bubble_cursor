@@ -2,7 +2,7 @@
 
 This file is read automatically by Claude Code at the start of a session. Read it fully, then `HANDOFF.md` / `CROSS-BROWSER-AUDIT.md` if they exist in this repo.
 
-- **Repo:** `zeerebel/bubble_cursor`  **Version:** 1.2.0  **Open draft PR:** zeerebel/bubble_cursor#7 (branch `claude/vigilant-cannon-o5rz3s`; nothing merged to `main` yet)
+- **Repo:** `zeerebel/bubble_cursor`  **Version:** 1.3.0  **Open draft PR:** zeerebel/bubble_cursor#7 (branch `claude/vigilant-cannon-o5rz3s`; nothing merged to `main` yet)
 
 ## What this is
 
@@ -15,7 +15,11 @@ A custom cursor: a dot and ring follower plus an optional WebGL fluid/smoke trai
 
 ## How to test
 
-- `./tests/run.sh` (php -l, PHP harness, node --check, Chromium suite; 63 PHP + 111 browser checks). See `tests/README.md`.
+- `./tests/run.sh` (php -l, PHP harness, node --check, Chromium suite; 74 PHP + 111 browser checks + the kit test (9 scenarios)). See `tests/README.md`.
+
+## Flux Family Kit
+
+Since 1.3.0 the plugin carries the shared family kit: `bubble-cursor/includes/flux-family/loader.php` and `core.php` (kit 1.0.0), `tests/test-family-kit.php`, and `FAMILY.md` at the repo root (read it). The main file requires the loader, offers the core, registers slug `flux-bubble-cursor` (group `cursor`) and prints the card at the foot of the settings page with `flux_family_render_card( 'Flux Bubble Cursor' )`. The kit loads in wp-admin only. The plugin lives in the `bubble-cursor/` subfolder, so the kit must stay inside it; `tests/run.sh` runs an unmodified copy of the kit test from a scratch dir (the test expects `../includes/flux-family`). **Do not edit the copied kit files here: edit them in the family hub (`flux-family-hub`) and sync** (`FLUX_REPO_ROOT=<repo root> tools/sync-family.sh <repo>/bubble-cursor`). The repo now has a root `LICENSE` (GPL-2.0).
 
 ## Current state (as of Nov 2026)
 

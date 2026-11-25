@@ -3,17 +3,20 @@
 <!-- handoff:start -->
 ## START HERE: current status and how to resume (updated Nov 22, 2026)
 
-**Bubble Cursor**, version **1.2.0**, repo `zeerebel/bubble_cursor`, open draft PR `zeerebel/bubble_cursor#7` on branch `claude/vigilant-cannon-o5rz3s` (not merged to `main`). If you were told to "read the handoff", read this block, then `CLAUDE.md` (shared rules and the Flux-suite hardening checklist), then `CROSS-BROWSER-AUDIT.md` if present, then the rest of this file.
+**Bubble Cursor**, version **1.3.0**, repo `zeerebel/bubble_cursor`, open draft PR `zeerebel/bubble_cursor#7` on branch `claude/vigilant-cannon-o5rz3s` (not merged to `main`). If you were told to "read the handoff", read this block, then `CLAUDE.md` (shared rules and the Flux-suite hardening checklist), then `CROSS-BROWSER-AUDIT.md` if present, then the rest of this file.
 
 ### What this is
 A custom cursor: a dot and ring follower plus an optional WebGL fluid/smoke trail (`fluid-cursor.js`). Plugin folder is `bubble-cursor/`. The Reframe theme has a built-in bubble cursor; only one should be active.
+
+### Flux Family Kit (since 1.3.0)
+Shared kit in `bubble-cursor/includes/flux-family/` (`loader.php`, `core.php`, kit 1.0.0), test `tests/test-family-kit.php` (run by `tests/run.sh`), `FAMILY.md` at the repo root, registered as `flux-bubble-cursor` (group `cursor`), card at the foot of Settings > Bubble Cursor. Admin only. **Do not edit the copied kit, edit it in the hub and sync.** Root `LICENSE` (GPL-2.0) added in 1.3.0.
 
 ### Where things are
 - `bubble-cursor/bubble-cursor.php`, `assets/js/bubble-cursor.js`, `assets/js/fluid-cursor.js`, `assets/css/bubble-cursor.css`; filter `bubble_cursor_should_load`; constant `BUBBLE_CURSOR_VERSION`.
 - **Do not modify** `Exposure.html`, the `demo/` images or the screenshot jpeg (owner reference material).
 
 ### How to test
-- `./tests/run.sh` (php -l, PHP harness, node --check, Chromium suite; 63 PHP + 111 browser checks). See `tests/README.md`.
+- `./tests/run.sh` (php -l, PHP harness, node --check, Chromium suite; 74 PHP + 111 browser checks + the kit test (9 scenarios)). See `tests/README.md`.
 
 ### Status
 Audit (12 findings) fixed in 1.2.0: visible state no longer lives only in `<html>` classes, settings via `data-bc-settings`, optimizer opt-outs, native cursor hidden only after the follower exists, bfcache restore, builder guards, once-only guard, touch-laptop support (dormant until a real mouse moves), idle smoke loop sleeps, WebGL context recovery, cache purge on save, multisite uninstall. `CROSS-BROWSER-AUDIT.md` has the findings and a 'Resolved in 1.2.0' section.

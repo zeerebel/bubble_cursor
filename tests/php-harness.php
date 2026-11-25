@@ -63,6 +63,24 @@ function wp_enqueue_style( $h, $src, $deps, $ver ) { $GLOBALS['s']['enqueued'][ 
 function wp_enqueue_script( $h, $src, $deps, $ver, $foot ) { $GLOBALS['s']['enqueued'][ $h ] = compact( 'src', 'ver', 'foot' ); }
 function wp_add_inline_script( $h, $code, $pos ) { $GLOBALS['s']['inline'][ $h ] = array( $code, $pos ); }
 function add_options_page() {}
+// Extra stubs for rendering the settings page and the Flux Family Kit.
+function has_action( $h, $cb = false ) { return ! empty( $GLOBALS['s']['actions'][ $h ] ) && in_array( $cb, $GLOBALS['s']['actions'][ $h ], true ); }
+function _n( $a, $b, $n ) { return 1 === $n ? $a : $b; }
+function esc_html( $v ) { return htmlspecialchars( (string) $v, ENT_QUOTES, 'UTF-8' ); }
+function esc_html_e( $v ) { echo esc_html( $v ); }
+function esc_url_raw( $u, $protocols = null ) {
+	$p = parse_url( $u );
+	if ( empty( $p['scheme'] ) || ( $protocols && ! in_array( strtolower( $p['scheme'] ), $protocols, true ) ) ) { return ''; }
+	return $u;
+}
+function current_user_can( $c ) { return true; }
+function sanitize_key( $k ) { return preg_replace( "/[^a-z0-9_\\-]/", "", strtolower( $k ) ); }
+function esc_js( $s ) { return addslashes( (string) $s ); }
+function settings_fields( $g ) { echo '<input type="hidden" name="option_page" value="' . $g . '">'; }
+function checked( $a, $b = true, $echo = true ) { $r = (string) $a === (string) $b ? ' checked="checked"' : ''; if ( $echo ) { echo $r; } return $r; }
+function selected( $a, $b = true, $echo = true ) { $r = (string) $a === (string) $b ? ' selected="selected"' : ''; if ( $echo ) { echo $r; } return $r; }
+function submit_button() { echo '<input type="submit">'; }
+function add_menu_page() {}
 function register_setting() {}
 function admin_url( $p ) { return $p; }
 function rocket_clean_domain() { $GLOBALS['s']['calls'][] = 'rocket_clean_domain'; }
@@ -84,10 +102,10 @@ try {
 	$ok = false;
 }
 t_check( 'including bubble-cursor.php twice completes', $ok );
-t_check( 'version constant is 1.2.0', BUBBLE_CURSOR_VERSION === '1.2.0', BUBBLE_CURSOR_VERSION );
+t_check( 'version constant is 1.3.0', BUBBLE_CURSOR_VERSION === '1.3.0', BUBBLE_CURSOR_VERSION );
 t_check( 'hooks registered once (not twice)', count( $GLOBALS['s']['actions']['wp_enqueue_scripts'] ) === 1 && count( $GLOBALS['s']['activation'] ) === 1 );
 t_check( 'class and activation function exist', class_exists( 'Bubble_Cursor', false ) && function_exists( 'bubble_cursor_activate' ) );
-t_check( 'plugin header says 1.2.0', 1 === preg_match( '/^\s*\* Version:\s+1\.2\.0$/m', file_get_contents( $plugin ) ) );
+t_check( 'plugin header says 1.3.0', 1 === preg_match( '/^\s*\* Version:\s+1\.3\.0$/m', file_get_contents( $plugin ) ) );
 
 $bc = Bubble_Cursor::instance();
 $should = new ReflectionMethod( 'Bubble_Cursor', 'should_load' );
@@ -128,7 +146,7 @@ $GLOBALS['s']['options'][ BUBBLE_CURSOR_OPTION ] = array( 'ring_color' => '#ff00
 $bc->enqueue_assets();
 $e = $GLOBALS['s']['enqueued'];
 t_check( 'style + both scripts enqueued', isset( $e['style:bubble-cursor'], $e['bubble-cursor'], $e['bubble-cursor-fluid'] ) && count( $e ) === 3, array_keys( $e ) );
-t_check( 'asset ver = version + filemtime', 1 === preg_match( '/^1\.2\.0-\d+$/', (string) $e['bubble-cursor-fluid']['ver'] ), $e['bubble-cursor-fluid']['ver'] );
+t_check( 'asset ver = version + filemtime', 1 === preg_match( '/^1\.3\.0-\d+$/', (string) $e['bubble-cursor-fluid']['ver'] ), $e['bubble-cursor-fluid']['ver'] );
 t_check( 'both scripts in footer', true === $e['bubble-cursor']['foot'] && true === $e['bubble-cursor-fluid']['foot'] );
 t_check( 'inline global kept for backwards compat', 0 === strpos( $GLOBALS['s']['inline']['bubble-cursor-fluid'][0], 'window.BubbleCursorSettings = {' ) );
 $_GET = array( 'vc_editable' => 'true' );
@@ -177,6 +195,37 @@ $bc->purge_caches();
 $calls = $GLOBALS['s']['calls'];
 t_check( 'rocket_clean_domain / w3tc_flush_all / autoptimize called when present', array( 'rocket_clean_domain', 'w3tc_flush_all', 'autoptimizeCache::clearall' ) === $calls, $calls );
 t_check( 'litespeed_purge_all action fired', in_array( 'litespeed_purge_all', $GLOBALS['s']['did'], true ) );
+
+echo "\n[G] Flux Family Kit\n";
+global $flux_family_registry, $flux_family_offers;
+$reg = isset( $flux_family_registry['flux-bubble-cursor'] ) ? $flux_family_registry['flux-bubble-cursor'] : array();
+t_check( 'family: registers slug flux-bubble-cursor, group cursor, name Flux Bubble Cursor', 'flux-bubble-cursor' === ( $reg['slug'] ?? '' ) && 'cursor' === ( $reg['group'] ?? '' ) && 'Flux Bubble Cursor' === ( $reg['name'] ?? '' ), $reg );
+t_check( 'family: registered version is BUBBLE_CURSOR_VERSION', BUBBLE_CURSOR_VERSION === ( $reg['version'] ?? '' ) );
+t_check( 'family: settings_url points at the real settings page', is_callable( $reg['settings_url'] ?? null ) && false !== strpos( call_user_func( $reg['settings_url'] ), 'options-general.php?page=bubble-cursor' ) );
+$kit_core = dirname( __DIR__ ) . '/bubble-cursor/includes/flux-family/core.php';
+t_check( 'family: offers the bundled core.php (inside bubble-cursor/)', isset( $flux_family_offers['1.0.0'] ) && $flux_family_offers['1.0.0'] === $kit_core && is_readable( $kit_core ), $flux_family_offers );
+
+// Front end: booting the kit loads nothing and prints nothing.
+$GLOBALS['s']['admin'] = false;
+ob_start();
+flux_family_boot();
+flux_family_render_card( 'Flux Bubble Cursor' );
+$silent = ob_get_clean();
+t_check( 'family: front end loads no kit core and prints nothing', '' === $silent && ! class_exists( 'Flux_Family_Core', false ) );
+t_check( 'family: front-end should_load result unchanged by the kit', true === $load() );
+t_check( 'family: front-end JS settings carry nothing from the kit', false === stripos( json_encode( $bj->invoke( $bc, Bubble_Cursor::defaults() ) ), 'family' ) );
+t_check( 'family: kit adds nothing to the front-end hooks', empty( $GLOBALS['s']['actions']['wp_footer'] ) && empty( $GLOBALS['s']['actions']['wp_head'] ) );
+
+// Admin: the kit loads and the settings page ends with the family strip.
+$GLOBALS['s']['admin'] = true;
+flux_family_boot();
+t_check( 'family: admin boot loads Flux_Family_Core', class_exists( 'Flux_Family_Core', false ) );
+ob_start();
+$bc->render_settings_page();
+$page = ob_get_clean();
+t_check( 'family: settings page output contains the family strip', false !== strpos( $page, 'flux-family-strip' ) && false !== strpos( $page, 'Flux Bubble Cursor is part of the Flux family' ) );
+t_check( 'family: strip is inside the wrap, after the form', strrpos( $page, '</form>' ) < strpos( $page, 'flux-family-strip' ) && strrpos( $page, '</div>' ) > strpos( $page, 'flux-family-strip' ) );
+$GLOBALS['s']['admin'] = false;
 
 echo "\n[F] uninstall.php\n";
 $GLOBALS['s']['deleted'] = array();

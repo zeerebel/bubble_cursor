@@ -8,7 +8,7 @@ reading only.
 ./tests/run.sh
 ```
 
-It runs, in order: `php -l` on every PHP file, the PHP harness, `node --check`
+It runs, in order: `php -l` on every PHP file, the PHP harness, the Flux Family Kit test, `node --check`
 on every JS file, then the browser suite. It exits non-zero on any failure.
 
 Needs `php` (CLI), `node`, and Playwright for Node that already has a Chromium
@@ -26,6 +26,13 @@ There is no `npm install` and the suite never runs `playwright install`.
   WordPress functions and exercises `sanitize()`, `should_load()` (editor query
   args, Elementor/WPBakery/Customizer), the script tag filter, cache purge and
   `uninstall.php` (single site and multisite).
+
+* `tests/test-family-kit.php` is the shared Flux Family Kit test (9 scenarios,
+  identical in every Flux repo, do not edit). It expects the kit at
+  `../includes/flux-family`, so `run.sh` runs an unmodified copy of it from a
+  scratch directory whose `includes/` links to `bubble-cursor/includes/`.
+  Run it by hand the same way, or `php tests/test-family-kit.php` after pointing
+  `includes/` at the plugin folder's.
 
 Software GL (swiftshader) makes `requestAnimationFrame` slow, so the tests poll
 for the ring to converge instead of using fixed sleeps. Real bfcache is not

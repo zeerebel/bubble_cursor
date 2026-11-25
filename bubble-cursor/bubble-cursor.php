@@ -3,7 +3,7 @@
  * Plugin Name:       Bubble Cursor — Smokey Fluid Cursor
  * Plugin URI:        https://github.com/zeerebel/bubble_cursor
  * Description:       Adds a colourful WebGL "smoke" fluid trail plus a dot + ring custom cursor with a "View" hover bubble — a replica of the TreeThemes "Deep" theme cursor. Works on any theme (Elementor or not). No coding required.
- * Version:           1.2.0
+ * Version:           1.3.0
  * Requires at least: 5.6
  * Requires PHP:      7.2
  * Author:            zeerebel
@@ -26,11 +26,28 @@ if ( defined( 'BUBBLE_CURSOR_VERSION' ) ) {
 	return;
 }
 
-define( 'BUBBLE_CURSOR_VERSION', '1.2.0' );
+define( 'BUBBLE_CURSOR_VERSION', '1.3.0' );
 define( 'BUBBLE_CURSOR_FILE', __FILE__ );
 define( 'BUBBLE_CURSOR_URL', plugin_dir_url( __FILE__ ) );
 define( 'BUBBLE_CURSOR_PATH', plugin_dir_path( __FILE__ ) );
 define( 'BUBBLE_CURSOR_OPTION', 'bubble_cursor_options' );
+
+// Flux Family Kit (admin-only; registering is just an array write on the front end).
+// Do not edit includes/flux-family/: change the kit in the family hub and sync it.
+require_once __DIR__ . '/includes/flux-family/loader.php';
+flux_family_offer( '1.0.0', __DIR__ . '/includes/flux-family/core.php' );
+flux_family_register(
+	array(
+		'slug'         => 'flux-bubble-cursor',
+		'name'         => 'Flux Bubble Cursor',
+		'version'      => BUBBLE_CURSOR_VERSION,
+		'group'        => 'cursor',
+		'description'  => 'Dot, ring and smoke-trail cursor.',
+		'settings_url' => function () {
+			return admin_url( 'options-general.php?page=bubble-cursor' );
+		},
+	)
+);
 
 if ( ! class_exists( 'Bubble_Cursor', false ) ) {
 
@@ -674,6 +691,7 @@ if ( ! class_exists( 'Bubble_Cursor', false ) ) {
 
 					<?php submit_button(); ?>
 				</form>
+				<?php flux_family_render_card( 'Flux Bubble Cursor' ); ?>
 			</div>
 			<?php
 		}

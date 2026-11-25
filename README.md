@@ -4,7 +4,7 @@
 >
 > | | |
 > | --- | --- |
-> | **What this is** | Bubble Cursor — WordPress plugin, WebGL smoke trail + dot/ring cursor with "View" hover bubble. v1.2.0. Plugin lives in the `bubble-cursor/` subfolder; `demo/`, `Exposure.html` and the screenshot are reference material. |
+> | **What this is** | Bubble Cursor — WordPress plugin, WebGL smoke trail + dot/ring cursor with "View" hover bubble. v1.3.0. Plugin lives in the `bubble-cursor/` subfolder; `demo/`, `Exposure.html` and the screenshot are reference material. |
 > | **Status** | **CANONICAL for the standalone plugin** — but the *identical* code is already built into the Reframe theme as Cursor Style "Bubble". |
 > | **Planned repo name** | `flux-bubble-cursor` |
 > | **With the Reframe theme** | ✅ Use **either** the theme's Cursor Style = Bubble **or** this plugin with the theme cursor Off — never both (two cursors). |
@@ -17,6 +17,8 @@ be replicated in WordPress?** Short answer: **yes**, and it's included here as a
 ready-to-install plugin.
 
 ![Smoke trail over the hero](demo/preview-smoke.png)
+
+**Part of the Flux family:** see [FAMILY.md](FAMILY.md) for how the Flux plugins fit together (shared Flux dashboard, support card, one-cursor rule). Final repo name: `flux-bubble-cursor`; it is in the `cursor` group, so only one cursor plugin should be active.
 
 ## What that cursor actually is
 

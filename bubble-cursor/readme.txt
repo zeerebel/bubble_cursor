@@ -4,7 +4,7 @@ Tags: cursor, custom cursor, fluid, webgl, smoke, mouse, elementor
 Requires at least: 5.6
 Tested up to: 6.8
 Requires PHP: 7.2
-Stable tag: 1.2.0
+Stable tag: 1.3.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -36,6 +36,8 @@ Performance & accessibility:
 * The heavy smoke layer is disabled for visitors who set
   "prefers reduced motion" in their OS.
 * Gracefully does nothing if the browser has no WebGL.
+
+Part of the Flux family: see FAMILY.md in the repository for how the Flux plugins fit together (one shared Flux dashboard in the admin, one support card, one-cursor rule).
 
 == Installation ==
 
@@ -91,6 +93,10 @@ visible, never for reduced-motion visitors, and the option is ignored if both
 the dot and the ring are off.
 
 == Changelog ==
+
+= 1.3.0 =
+* New: joins the Flux family. A shared "Flux" admin dashboard (lists the active Flux plugins, their versions and settings links, and warns if two cursor plugins are active) and a support card at the foot of Settings > Bubble Cursor, which can be hidden under Flux > Options. Admin only: nothing changes on the front end, and the plugin still works alone.
+* New: the repository now has a root LICENSE file (GPL-2.0).
 
 = 1.2.0 =
 * Fix: cursor no longer disappears for good when a theme or optimizer script
