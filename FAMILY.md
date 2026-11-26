@@ -27,6 +27,12 @@ is the live one. Versions change often: the **Flux** dashboard on a site lists w
 | `flux-bubble-cursor` | `zeerebel/bubble_cursor` | **cursor** | Dot, ring and smoke-trail cursor |
 | `super-duper-cursor` | `zeerebel/super-duper-cursor` | **cursor** | Dual-layer cursor that reacts to what you hover (WordPress.org edition, no shared kit) |
 | `super-duper-cursor-pro` | `zeerebel/super-duper-cursor-pro` | **cursor** | Dual and jelly cursor engines in one plugin |
+| `flux-core` | `zeerebel/flux-core` | ui | Shared engine: scheduler, scroll bus, observers, registry, animation adapter (the dependency of the next five) |
+| `flux-split` | `zeerebel/flux-split` | visual | Split text into lines, words or characters with staggered reveals (needs `flux-core`) |
+| `flux-marquee` | `zeerebel/flux-marquee` | visual | Infinite marquee that reacts to scroll (needs `flux-core`) |
+| `flux-pin` | `zeerebel/flux-pin` | scroll | Pinned scroll scenes and horizontal-scroll galleries (needs `flux-core`) |
+| `flux-magnetic` | `zeerebel/flux-magnetic` | ui | Magnetic hover for buttons and cards (needs `flux-core`; draws no cursor, so not in group `cursor`) |
+| `flux-distort` | `zeerebel/flux-distort` | visual | WebGL hover distortion for images (needs `flux-core`) |
 
 Not in the family: `TM-Pointer` (someone else's CodeCanyon plugin), the archived
 `super-cursor-hybrid`, `super-duper-cursor-v2.0.4a` (GSAP edition, superseded, archive
@@ -38,6 +44,8 @@ recommended), the Reframe theme.
   scroll; `flux-smooth-scroll` (Lenis) keeps scrolling on the window. A theme's own smooth scroll
   must be off when `flux-smooth-scroll` is on. These pairings are expected to work but were not
   tested together.
+- **Flux Core:** `flux-split`, `flux-marquee`, `flux-pin`, `flux-magnetic` and `flux-distort` need `flux-core` (one shared scheduler, window scroll bus and registry). Without it they print an admin notice and leave the page untouched. GSAP is never bundled and is off by default.
+- **Headings:** `flux-reveal` and `flux-split` can both target headings; `flux-reveal` skips text that `flux-split` owns. `flux-magnetic` skips elements a cursor plugin already pulls.
 - **Cursors:** the four cursor plugins are mutually exclusive (the one-cursor rule). `super-duper-cursor-pro`
   contains a dual engine ported from `super-duper-cursor` and a jelly engine ported from
   `flux-jelly-cursor`. `super-duper-cursor` and the archived GSAP edition share function names and must

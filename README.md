@@ -187,14 +187,20 @@ This plugin has siblings: the **Flux family** are small WordPress plugins that w
 
 | Plugin | Repo | Group | Version |
 | --- | --- | --- | --- |
-| Flux Reel | [`zeerebel/kurato`](https://github.com/zeerebel/kurato) | ui | 1.3.0 |
+| Flux Reel | [`zeerebel/kurato`](https://github.com/zeerebel/kurato) | ui | 1.3.1 |
 | Flux Backgrounds | [`zeerebel/flux-backgrounds`](https://github.com/zeerebel/flux-backgrounds) | visual | 0.10.0 |
-| Flux Preloader | [`zeerebel/flux-preloader`](https://github.com/zeerebel/flux-preloader) | visual | 1.5.0 |
-| Flux Reveal | [`zeerebel/flux-reveal`](https://github.com/zeerebel/flux-reveal) | visual | 1.8.0 |
-| Flux Smooth Scroll | [`zeerebel/fluxsmoothscroll`](https://github.com/zeerebel/fluxsmoothscroll) | scroll | 1.3.0 |
-| Flux Scroll Progress | [`zeerebel/fluxscrollprogress`](https://github.com/zeerebel/fluxscrollprogress) | scroll | 1.4.0 |
-| Flux Jelly Cursor | [`zeerebel/fluxjellycursor`](https://github.com/zeerebel/fluxjellycursor) | cursor | 1.4.0 |
-| **Flux Bubble Cursor (this plugin)** | [`zeerebel/bubble_cursor`](https://github.com/zeerebel/bubble_cursor) | cursor | 1.3.0 |
-| Super Duper Cursor | [`zeerebel/super-duper-cursor`](https://github.com/zeerebel/super-duper-cursor) | cursor | 3.1.2 |
-| Super Duper Cursor Pro | [`zeerebel/super-duper-cursor-pro`](https://github.com/zeerebel/super-duper-cursor-pro) | cursor | 4.3.0 |
+| Flux Preloader | [`zeerebel/flux-preloader`](https://github.com/zeerebel/flux-preloader) | visual | 1.5.1 |
+| Flux Reveal | [`zeerebel/flux-reveal`](https://github.com/zeerebel/flux-reveal) | visual | 1.8.1 |
+| Flux Smooth Scroll | [`zeerebel/fluxsmoothscroll`](https://github.com/zeerebel/fluxsmoothscroll) | scroll | 1.3.1 |
+| Flux Scroll Progress | [`zeerebel/fluxscrollprogress`](https://github.com/zeerebel/fluxscrollprogress) | scroll | 1.4.1 |
+| Flux Jelly Cursor | [`zeerebel/fluxjellycursor`](https://github.com/zeerebel/fluxjellycursor) | cursor | 1.4.1 |
+| **Flux Bubble Cursor (this plugin)** | [`zeerebel/bubble_cursor`](https://github.com/zeerebel/bubble_cursor) | cursor | 1.3.1 |
+| Super Duper Cursor | [`zeerebel/super-duper-cursor`](https://github.com/zeerebel/super-duper-cursor) | cursor | 3.2.0 |
+| Super Duper Cursor Pro | [`zeerebel/super-duper-cursor-pro`](https://github.com/zeerebel/super-duper-cursor-pro) | cursor | 4.3.1 |
+| Flux Core | [`zeerebel/flux-core`](https://github.com/zeerebel/flux-core) | ui | 1.0.0 |
+| Flux Split | [`zeerebel/flux-split`](https://github.com/zeerebel/flux-split) | visual | 1.1.0 |
+| Flux Marquee | [`zeerebel/flux-marquee`](https://github.com/zeerebel/flux-marquee) | visual | 1.0.0 |
+| Flux Pin | [`zeerebel/flux-pin`](https://github.com/zeerebel/flux-pin) | scroll | 1.0.0 |
+| Flux Magnetic | [`zeerebel/flux-magnetic`](https://github.com/zeerebel/flux-magnetic) | ui | 1.0.0 |
+| Flux Distort | [`zeerebel/flux-distort`](https://github.com/zeerebel/flux-distort) | visual | 1.0.0 |
 <!-- flux-family:end -->

@@ -8,7 +8,7 @@
 <!-- family:start -->
 ### Family context (siblings)
 
-This plugin is one of the **Flux family**: see `FAMILY.md` (identical in every sibling repo) and the sibling table in `CLAUDE.md`. Short version: `flux-reel` (ui), `flux-backgrounds` (visual), `flux-preloader` (visual), `flux-reveal` (visual), `flux-smooth-scroll` (scroll), `flux-scroll-progress` (scroll), `flux-jelly-cursor` (cursor), `super-duper-cursor` (cursor), `super-duper-cursor-pro` (cursor).
+This plugin is one of the **Flux family**: see `FAMILY.md` (identical in every sibling repo) and the sibling table in `CLAUDE.md`. Short version: `flux-reel` (ui), `flux-backgrounds` (visual), `flux-preloader` (visual), `flux-reveal` (visual), `flux-smooth-scroll` (scroll), `flux-scroll-progress` (scroll), `flux-jelly-cursor` (cursor), `super-duper-cursor` (cursor), `super-duper-cursor-pro` (cursor), `flux-core` (ui), `flux-split` (visual), `flux-marquee` (visual), `flux-pin` (scroll), `flux-magnetic` (ui), `flux-distort` (visual).
 
 - One of four cursor plugins: only ONE may be active. The Reframe theme has the same bubble cursor built in (Cursor Style "Bubble"): use the theme style or this plugin, never both.
 - Its plugin lives in the `bubble-cursor/` subfolder (the kit is in `bubble-cursor/includes/flux-family/`); the repo root also holds owner reference files that must not be changed.

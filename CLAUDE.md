@@ -47,20 +47,26 @@ Hover word is real (`hover_text` switch + `hover_label`, default "View"; opt-out
 
 ## The Flux family (you have siblings)
 
-This repo is one member of the **Flux family** of WordPress plugins by the same owner. Read `FAMILY.md` (the identical file sits in every sibling repo): it explains how the plugins fit together, the shared kit, the one-cursor rule and what to check before selling. Versions below were read from each plugin header on 2026-11-25.
+This repo is one member of the **Flux family** of WordPress plugins by the same owner. Read `FAMILY.md` (the identical file sits in every sibling repo): it explains how the plugins fit together, the shared kit, the one-cursor rule and what to check before selling. Versions below were read from each plugin header on 2026-11-26.
 
 | Plugin | Repo | Group | Version | What it does |
 | --- | --- | --- | --- | --- |
-| Flux Reel | [`zeerebel/kurato`](https://github.com/zeerebel/kurato) (in the `flux-reel/` folder of the Kurato repo; move to its own `flux-reel` repo) | ui | 1.3.0 | Scroll timecode, film-style menu overlay and footer reel |
+| Flux Reel | [`zeerebel/kurato`](https://github.com/zeerebel/kurato) (in the `flux-reel/` folder of the Kurato repo; move to its own `flux-reel` repo) | ui | 1.3.1 | Scroll timecode, film-style menu overlay and footer reel |
 | Flux Backgrounds | [`zeerebel/flux-backgrounds`](https://github.com/zeerebel/flux-backgrounds) | visual | 0.10.0 | Animated WebGL backgrounds (12 modes) |
-| Flux Preloader | [`zeerebel/flux-preloader`](https://github.com/zeerebel/flux-preloader) | visual | 1.5.0 | Intro splash that counts up while the page loads |
-| Flux Reveal | [`zeerebel/flux-reveal`](https://github.com/zeerebel/flux-reveal) | visual | 1.8.0 | Blur-in scroll reveals for headings and sections |
-| Flux Smooth Scroll | [`zeerebel/fluxsmoothscroll`](https://github.com/zeerebel/fluxsmoothscroll) (rename the repo to `flux-smooth-scroll`) | scroll | 1.3.0 | Weighted smooth scrolling (Lenis) |
-| Flux Scroll Progress | [`zeerebel/fluxscrollprogress`](https://github.com/zeerebel/fluxscrollprogress) (rename the repo to `flux-scroll-progress`) | scroll | 1.4.0 | Slim reading-progress bar |
-| Flux Jelly Cursor | [`zeerebel/fluxjellycursor`](https://github.com/zeerebel/fluxjellycursor) (rename the repo to `flux-jelly-cursor`) | cursor | 1.4.0 | Elastic jelly blob cursor |
-| **Flux Bubble Cursor (you)** | [`zeerebel/bubble_cursor`](https://github.com/zeerebel/bubble_cursor) (rename the repo to `flux-bubble-cursor`) | cursor | 1.3.0 | Dot, ring and smoke-trail cursor |
-| Super Duper Cursor | [`zeerebel/super-duper-cursor`](https://github.com/zeerebel/super-duper-cursor) | cursor | 3.1.2 | Dual-layer cursor that reacts to what you hover (WordPress.org edition, no shared kit) |
-| Super Duper Cursor Pro | [`zeerebel/super-duper-cursor-pro`](https://github.com/zeerebel/super-duper-cursor-pro) | cursor | 4.3.0 | Dual and jelly cursor engines in one plugin |
+| Flux Preloader | [`zeerebel/flux-preloader`](https://github.com/zeerebel/flux-preloader) | visual | 1.5.1 | Intro splash that counts up while the page loads |
+| Flux Reveal | [`zeerebel/flux-reveal`](https://github.com/zeerebel/flux-reveal) | visual | 1.8.1 | Blur-in scroll reveals for headings and sections |
+| Flux Smooth Scroll | [`zeerebel/fluxsmoothscroll`](https://github.com/zeerebel/fluxsmoothscroll) (rename the repo to `flux-smooth-scroll`) | scroll | 1.3.1 | Weighted smooth scrolling (Lenis) |
+| Flux Scroll Progress | [`zeerebel/fluxscrollprogress`](https://github.com/zeerebel/fluxscrollprogress) (rename the repo to `flux-scroll-progress`) | scroll | 1.4.1 | Slim reading-progress bar |
+| Flux Jelly Cursor | [`zeerebel/fluxjellycursor`](https://github.com/zeerebel/fluxjellycursor) (rename the repo to `flux-jelly-cursor`) | cursor | 1.4.1 | Elastic jelly blob cursor |
+| **Flux Bubble Cursor (you)** | [`zeerebel/bubble_cursor`](https://github.com/zeerebel/bubble_cursor) (rename the repo to `flux-bubble-cursor`) | cursor | 1.3.1 | Dot, ring and smoke-trail cursor |
+| Super Duper Cursor | [`zeerebel/super-duper-cursor`](https://github.com/zeerebel/super-duper-cursor) | cursor | 3.2.0 | Dual-layer cursor that reacts to what you hover (WordPress.org edition, no shared kit) |
+| Super Duper Cursor Pro | [`zeerebel/super-duper-cursor-pro`](https://github.com/zeerebel/super-duper-cursor-pro) | cursor | 4.3.1 | Dual and jelly cursor engines in one plugin |
+| Flux Core | [`zeerebel/flux-core`](https://github.com/zeerebel/flux-core) | ui | 1.0.0 | Shared engine: scheduler, scroll bus, registry, animation adapter |
+| Flux Split | [`zeerebel/flux-split`](https://github.com/zeerebel/flux-split) | visual | 1.1.0 | Split-text (lines/words/chars) staggered reveals; builds on Flux Core |
+| Flux Marquee | [`zeerebel/flux-marquee`](https://github.com/zeerebel/flux-marquee) | visual | 1.0.0 | Infinite marquee that reacts to scroll; builds on Flux Core |
+| Flux Pin | [`zeerebel/flux-pin`](https://github.com/zeerebel/flux-pin) | scroll | 1.0.0 | Pinned scroll scenes and horizontal-scroll galleries; builds on Flux Core |
+| Flux Magnetic | [`zeerebel/flux-magnetic`](https://github.com/zeerebel/flux-magnetic) | ui | 1.0.0 | Magnetic hover: elements ease toward the pointer and spring back; builds on Flux Core |
+| Flux Distort | [`zeerebel/flux-distort`](https://github.com/zeerebel/flux-distort) | visual | 1.0.0 | WebGL hover distortion for images; builds on Flux Core |
 
 Not in the family:
 - `super-duper-cursor-v2.0.4a`: GSAP edition of the dual cursor (3.0.x). **Not in the family:** superseded, archive recommended. Never run it next to `super-duper-cursor` (same function names, fatal).
