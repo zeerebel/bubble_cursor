@@ -15,7 +15,7 @@ const MIME = { '.js': 'text/javascript', '.css': 'text/css', '.html': 'text/html
 /* ---------------- fixture page ---------------- */
 const DEFAULT_SETTINGS = {
   enableFluid: true, enableRing: true, enableDot: true, hideNativeCursor: false,
-  hideOnTouch: true, dotColor: '#ffffff', ringColor: '#ffffff', hoverText: 'View',
+  hideOnTouch: true, dotColor: '#ffffff', ringColor: '#ffffff', hoverText: true, hoverLabel: '',
   hoverSelector: 'a[href], button:not(:disabled), input[type="submit"], input[type="button"], .elementor-button, [data-bubble-cursor-hover]',
   dotSize: 8, ringSize: 40, ringBorder: 1.5, cursorOpacity: 1, smokeOpacity: 1, smokeBlend: '',
   fluid: { DENSITY_DISSIPATION: 0.98, VELOCITY_DISSIPATION: 0.98 }
@@ -31,6 +31,7 @@ const HOSTILE_CSS = `
 
 function page(o) {
   const settings = Object.assign({}, DEFAULT_SETTINGS, o.settings || {});
+  Object.keys(settings).forEach((k) => { if (settings[k] === null) delete settings[k]; }); // null = key absent
   const json = JSON.stringify(settings);
   const attr = json.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
   const fluid = '<script src="/js/fluid-cursor.js"></script>';
@@ -45,10 +46,13 @@ function page(o) {
 <div id="header-outer"></div>
 <div class="hero"><a class="lnk" href="#x" style="background:#444">Link</a>
 <button class="btn" style="background:#444">Button</button>
-<div class="card" data-bubble-cursor-text="Open">Card</div></div><div class="tall"></div>
+<div class="card" data-bubble-cursor-text="Open">Card</div>
+<a id="nolabel" href="#n" data-bubble-cursor-no-text style="position:absolute;left:1000px;top:200px;width:160px;height:50px;background:#444;display:block">No label</a>
+<a id="emptytxt" href="#e" data-bubble-cursor-text="" style="position:absolute;left:1000px;top:300px;width:160px;height:50px;background:#444;display:block">Empty text</a></div><div class="tall"></div>
 <a id="far" href="#y" style="position:absolute;left:300px;top:1800px;width:160px;height:50px;background:#444;display:block">Far link</a>
 ${o.rewrite === 'load' ? '<script>window.addEventListener("load",function(){setTimeout(function(){document.documentElement.className="theme-js loaded"},50)})</script>' : ''}
 ${o.rewrite === 'dcl' ? '<script>document.addEventListener("DOMContentLoaded",function(){document.documentElement.className="theme-js"})</script>' : ''}
+${o.pre ? '<script>' + o.pre + '</script>' : ''}
 ${o.noGlobal ? '' : '<script>window.BubbleCursorSettings=' + json + ';</script>'}
 ${fluid}${main}${o.double ? fluid + main : ''}
 </body></html>`;
@@ -96,6 +100,8 @@ async function open(browser, o, ctxOpts) {
   });
   await p.addInitScript(() => {
     window.__draws = 0;
+    window.__raf = 0;
+    (function () { const r = window.requestAnimationFrame; window.requestAnimationFrame = function (cb) { window.__raf++; return r.call(window, cb); }; })();
     ['WebGLRenderingContext', 'WebGL2RenderingContext'].forEach((n) => {
       const C = window[n];
       if (!C) return;
@@ -451,6 +457,114 @@ async function main() {
     check('works after resize', (await op(s, '.bc-dot')) === 1 && (await info(s)).run);
     check('resize/scroll: no errors', s.errs.length === 0, s.errs);
     await s.__ctx.close();
+  }
+
+  console.log('\n[14] default hover label ("View"), per-element override, opt-outs');
+  {
+    const p = await open(browser, { settings: { hoverLabel: 'View' } });
+    await moveAround(p, 340, 220); await sleep(500);
+    check('link with no own text shows the default word', (await p.getAttribute('.bc-ring', 'data-bc-state')) === 'text' && (await p.textContent('.bc-ring__label')) === 'View', await p.textContent('.bc-ring__label'));
+    check('default word: ring 2.25x (90px) and label visible', approx((await box(p, '.bc-ring')).w, 90, 1) && (await op(p, '.bc-ring__label')) === 1);
+    await moveAround(p, 650, 250); await sleep(500);
+    check('per-element data-bubble-cursor-text still wins ("Open")', (await p.textContent('.bc-ring__label')) === 'Open');
+    await moveAround(p, 1040, 220); await sleep(500);
+    check('data-bubble-cursor-no-text: plain hover, no word', (await p.getAttribute('.bc-ring', 'data-bc-state')) === 'hover' && (await p.textContent('.bc-ring__label')) === '', await p.textContent('.bc-ring__label'));
+    await moveAround(p, 1040, 320); await sleep(500);
+    check('data-bubble-cursor-text="" opts out: plain hover, no word', (await p.getAttribute('.bc-ring', 'data-bc-state')) === 'hover' && (await p.textContent('.bc-ring__label')) === '');
+    await moveAround(p, 1000, 500); await sleep(500);
+    check('leaving clears the default word', !(await p.getAttribute('.bc-ring', 'data-bc-state')) && (await p.textContent('.bc-ring__label')) === '');
+    check('default label: no errors/warnings', p.errs.length === 0 && p.warns.length === 0, [p.errs, p.warns]);
+    await p.__ctx.close();
+
+    const e = await open(browser, { settings: { hoverLabel: '' } });
+    await moveAround(e, 340, 220); await sleep(500);
+    check('empty label: plain hover, no word', (await e.getAttribute('.bc-ring', 'data-bc-state')) === 'hover' && (await e.textContent('.bc-ring__label')) === '');
+    await e.__ctx.close();
+
+    const off = await open(browser, { settings: { hoverText: false, hoverLabel: 'View' } });
+    await moveAround(off, 340, 220); await sleep(500);
+    check('hoverText off: no word even with a label set', (await off.getAttribute('.bc-ring', 'data-bc-state')) === 'hover' && (await off.textContent('.bc-ring__label')) === '');
+    await off.__ctx.close();
+
+    const legacy = await open(browser, { settings: { hoverText: 'Go', hoverLabel: null } });
+    await moveAround(legacy, 340, 220); await sleep(500);
+    check('legacy hoverText string (older settings) is used as the label', (await legacy.textContent('.bc-ring__label')) === 'Go');
+    await legacy.__ctx.close();
+
+    const xss = await open(browser, { settings: { hoverLabel: '<img src=x onerror=alert(1)>' } });
+    await moveAround(xss, 340, 220); await sleep(500);
+    check('label is text, never HTML', (await xss.textContent('.bc-ring__label')) === '<img src=x onerror=alert(1)>' && (await xss.$$('.bc-ring__label img')).length === 0);
+    await xss.__ctx.close();
+  }
+
+  console.log('\n[15] ring blend mode (mixBlend)');
+  {
+    const p = await open(browser, { settings: { mixBlend: 'difference' } });
+    check('mixBlend difference reaches the ring', (await p.evaluate(() => getComputedStyle(document.querySelector('.bc-ring')).mixBlendMode)) === 'difference');
+    await p.__ctx.close();
+    const q = await open(browser, {});
+    check('no mixBlend: ring stays normal', (await q.evaluate(() => getComputedStyle(document.querySelector('.bc-ring')).mixBlendMode)) === 'normal');
+    await q.__ctx.close();
+  }
+
+  console.log('\n[16] reduced motion is live (emulateMedia toggled mid-visit)');
+  {
+    const p = await open(browser, { settings: { hideNativeCursor: true } });
+    await moveAround(p, 300, 300); await sleep(500);
+    check('before: native cursor hidden and follower drawn', (await p.evaluate(() => getComputedStyle(document.body).cursor)) === 'none' && (await op(p, '.bc-dot')) === 1);
+    await p.emulateMedia({ reducedMotion: 'reduce' });
+    await sleep(400);
+    check('reduce on: native cursor visible again', (await p.evaluate(() => getComputedStyle(document.body).cursor)) !== 'none', await p.evaluate(() => getComputedStyle(document.body).cursor));
+    check('reduce on: no bc-hide-native marker', !(await p.evaluate(() => document.documentElement.classList.contains('bc-hide-native'))));
+    check('reduce on: follower and canvas gone', JSON.stringify(await counts(p)) === '{"dot":0,"ring":0,"canvas":0}', await counts(p));
+    check('reduce on: smoke engine stopped', !(await info(p)).run);
+    await p.evaluate(() => { window.__raf = 0; window.__draws = 0; });
+    await moveAround(p, 500, 400); await sleep(600);
+    const q = await p.evaluate(() => ({ raf: window.__raf, draws: window.__draws }));
+    check('reduce on: zero requestAnimationFrame and zero GL draws while moving', q.raf === 0 && q.draws === 0, q);
+    await p.emulateMedia({ reducedMotion: 'no-preference' });
+    await sleep(500);
+    check('reduce off: follower and canvas back', JSON.stringify(await counts(p)) === '{"dot":1,"ring":1,"canvas":1}', await counts(p));
+    await moveAround(p, 400, 300); await sleep(500);
+    check('reduce off: dot visible and native cursor hidden again', (await op(p, '.bc-dot')) === 1 && (await p.evaluate(() => getComputedStyle(document.body).cursor)) === 'none');
+    check('reduce off: smoke running', (await info(p)).run);
+    check('reduce toggling: no errors', p.errs.length === 0, p.errs);
+    await p.__ctx.close();
+
+    const r = await open(browser, { settings: { hideNativeCursor: true } }, { viewport: { width: 1440, height: 800 }, reducedMotion: 'reduce' });
+    check('started reduced: nothing drawn', JSON.stringify(await counts(r)) === '{"dot":0,"ring":0,"canvas":0}');
+    await r.emulateMedia({ reducedMotion: 'no-preference' });
+    await sleep(500);
+    await moveAround(r, 300, 300); await sleep(500);
+    check('started reduced, then turned off: cursor starts', (await counts(r)).ring === 1 && (await op(r, '.bc-ring')) === 1);
+    await r.__ctx.close();
+
+    const c = await open(browser, { settings: { hideNativeCursor: true } }, { viewport: { width: 1440, height: 800 }, reducedMotion: 'reduce' });
+    const cur = await c.evaluate(() => { document.documentElement.classList.add('bc-active', 'bc-hide-native'); return getComputedStyle(document.body).cursor; });
+    check('CSS alone never hides the native cursor under reduced motion (stale marker)', cur !== 'none', cur);
+    await c.__ctx.close();
+  }
+
+  console.log('\n[17] one-cursor stand-down (other cursor plugin flags)');
+  {
+    for (const flag of ['__fluxJellyActive', '__superCursorActive', '__sdcpJellyActive', '__sdcpDualActive']) {
+      const p = await open(browser, { settings: { hideNativeCursor: true }, pre: 'window.' + flag + '=true' });
+      await moveAround(p, 300, 300); await sleep(300);
+      check(flag + ': nothing mounted', JSON.stringify(await counts(p)) === '{"dot":0,"ring":0,"canvas":0}', await counts(p));
+      check(flag + ': native cursor untouched', (await p.evaluate(() => getComputedStyle(document.body).cursor)) !== 'none' && !(await p.evaluate(() => document.documentElement.classList.contains('bc-active'))));
+      check(flag + ': one console.warn naming it', p.warns.length === 1 && p.warns[0].indexOf(flag) !== -1, p.warns);
+      check(flag + ': does not claim __bubbleCursorBooted', !(await p.evaluate(() => window.__bubbleCursorBooted)));
+      check(flag + ': no errors', p.errs.length === 0, p.errs);
+      await p.__ctx.close();
+    }
+    const f = await open(browser, { pre: 'window.__fluxJellyActive=false;window.__sdcpDualActive=0' });
+    check('falsy flags do not block the cursor', (await counts(f)).ring === 1 && f.warns.length === 0, f.warns);
+    check('normal boot sets __bubbleCursorBooted', await f.evaluate(() => window.__bubbleCursorBooted === true));
+    await f.__ctx.close();
+    // Touch-only (dormant) boot with a sibling flag: nothing is mounted either.
+    const t = await open(browser, { pre: 'window.__sdcpJellyActive=true' }, Object.assign({}, devices['iPhone 13']));
+    check('touch device + sibling flag: nothing mounted', JSON.stringify(await counts(t)) === '{"dot":0,"ring":0,"canvas":0}');
+    await t.__ctx.close();
   }
 
   await browser.close();

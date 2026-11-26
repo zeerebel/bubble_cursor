@@ -25,10 +25,15 @@
   display: block;
 }
 
-/* When the native cursor should be hidden (optional). */
-html.bc-active.bc-hide-native,
-html.bc-active.bc-hide-native * {
-  cursor: none !important;
+/* When the native cursor should be hidden (optional). Only ever active while
+ * motion is allowed: with reduced motion the follower is not drawn, so the
+ * native cursor must stay, even if a stale bc-hide-native marker is left on
+ * <html> for a moment. */
+@media (prefers-reduced-motion: no-preference) {
+  html.bc-active.bc-hide-native,
+  html.bc-active.bc-hide-native * {
+    cursor: none !important;
+  }
 }
 
 /* Shared base for the follower elements. */

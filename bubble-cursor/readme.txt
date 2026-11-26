@@ -4,7 +4,7 @@ Tags: cursor, custom cursor, fluid, webgl, smoke, mouse, elementor
 Requires at least: 5.6
 Tested up to: 6.8
 Requires PHP: 7.2
-Stable tag: 1.3.0
+Stable tag: 1.3.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -54,7 +54,7 @@ No. It runs on any theme. Elementor "Cursor Hover Effect Text" settings are
 picked up automatically when present.
 
 = How do I show custom hover text on a specific element? =
-Add `data-bubble-cursor-text="Open"` (or any word) to the element.
+Add `data-bubble-cursor-text="Open"` (or any word) to the element. Links and buttons without their own text show the "Default hover label" from the settings ("View" by default; blank for no word). Add `data-bubble-cursor-no-text` (or an empty `data-bubble-cursor-text=""`) to an element to show no word on it.
 
 = How do I make an element trigger the enlarged ring? =
 It already triggers on links and buttons. For anything else, add
@@ -93,6 +93,14 @@ visible, never for reduced-motion visitors, and the option is ignored if both
 the dot and the ring are off.
 
 == Changelog ==
+
+= 1.3.1 =
+* Fix: the "View" hover word is now real. New "Hover word" switch and "Default hover label" setting (default "View", blank = no word); links and buttons without their own `data-bubble-cursor-text` show it. `data-bubble-cursor-no-text` (or an empty `data-bubble-cursor-text`) opts an element out. Older saved settings are carried over.
+* New: "Ring blend mode" setting (normal, screen, lighten, overlay, difference, exclusion, color-dodge, hard-light, soft-light).
+* Fix: reduced motion is now live. Turning the preference on while a page is open removes the dot, ring and smoke and restores the native cursor; turning it off starts them again. The CSS that hides the native cursor only applies while motion is allowed.
+* New: one cursor only. If another Flux cursor plugin has flagged itself, Bubble Cursor draws nothing, leaves the native cursor alone and logs one console warning.
+* Removed: the unused `textSelector` setting.
+* Docs: exact build command for the zip.
 
 = 1.3.0 =
 * New: joins the Flux family. A shared "Flux" admin dashboard (lists the active Flux plugins, their versions and settings links, and warns if two cursor plugins are active) and a support card at the foot of Settings > Bubble Cursor, which can be hidden under Flux > Options. Admin only: nothing changes on the front end, and the plugin still works alone.

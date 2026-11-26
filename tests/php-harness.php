@@ -102,10 +102,10 @@ try {
 	$ok = false;
 }
 t_check( 'including bubble-cursor.php twice completes', $ok );
-t_check( 'version constant is 1.3.0', BUBBLE_CURSOR_VERSION === '1.3.0', BUBBLE_CURSOR_VERSION );
+t_check( 'version constant is 1.3.1', BUBBLE_CURSOR_VERSION === '1.3.1', BUBBLE_CURSOR_VERSION );
 t_check( 'hooks registered once (not twice)', count( $GLOBALS['s']['actions']['wp_enqueue_scripts'] ) === 1 && count( $GLOBALS['s']['activation'] ) === 1 );
 t_check( 'class and activation function exist', class_exists( 'Bubble_Cursor', false ) && function_exists( 'bubble_cursor_activate' ) );
-t_check( 'plugin header says 1.3.0', 1 === preg_match( '/^\s*\* Version:\s+1\.3\.0$/m', file_get_contents( $plugin ) ) );
+t_check( 'plugin header says 1.3.1', 1 === preg_match( '/^\s*\* Version:\s+1\.3\.1$/m', file_get_contents( $plugin ) ) );
 
 $bc = Bubble_Cursor::instance();
 $should = new ReflectionMethod( 'Bubble_Cursor', 'should_load' );
@@ -142,11 +142,11 @@ t_check( 'unrelated query args still load', true === ( function () use ( $load )
 t_check( 'back to normal -> loads', true === $load() );
 
 echo "\n[C] enqueue + script tag filter\n";
-$GLOBALS['s']['options'][ BUBBLE_CURSOR_OPTION ] = array( 'ring_color' => '#ff0000', 'hover_text' => "It's \"quoted\" & <b>" );
+$GLOBALS['s']['options'][ BUBBLE_CURSOR_OPTION ] = array( 'ring_color' => '#ff0000', 'hover_label' => "It's \"quoted\" & <b>" );
 $bc->enqueue_assets();
 $e = $GLOBALS['s']['enqueued'];
 t_check( 'style + both scripts enqueued', isset( $e['style:bubble-cursor'], $e['bubble-cursor'], $e['bubble-cursor-fluid'] ) && count( $e ) === 3, array_keys( $e ) );
-t_check( 'asset ver = version + filemtime', 1 === preg_match( '/^1\.3\.0-\d+$/', (string) $e['bubble-cursor-fluid']['ver'] ), $e['bubble-cursor-fluid']['ver'] );
+t_check( 'asset ver = version + filemtime', 1 === preg_match( '/^1\.3\.1-\d+$/', (string) $e['bubble-cursor-fluid']['ver'] ), $e['bubble-cursor-fluid']['ver'] );
 t_check( 'both scripts in footer', true === $e['bubble-cursor']['foot'] && true === $e['bubble-cursor-fluid']['foot'] );
 t_check( 'inline global kept for backwards compat', 0 === strpos( $GLOBALS['s']['inline']['bubble-cursor-fluid'][0], 'window.BubbleCursorSettings = {' ) );
 $_GET = array( 'vc_editable' => 'true' );
@@ -168,7 +168,7 @@ t_check( 'src/id of main tag preserved', false !== strpos( $m, "src='http://exam
 preg_match( '/data-bc-settings="([^"]*)"/', $m, $mm );
 $decoded = isset( $mm[1] ) ? json_decode( html_entity_decode( $mm[1], ENT_QUOTES ), true ) : null;
 t_check( 'main tag carries valid data-bc-settings JSON', is_array( $decoded ) && '#ff0000' === $decoded['ringColor'], $mm );
-t_check( 'quotes/ampersands/angle brackets in settings survive the attribute', is_array( $decoded ) && "It's \"quoted\" & <b>" === $decoded['hoverText'], $decoded['hoverText'] ?? null );
+t_check( 'quotes/ampersands/angle brackets in settings survive the attribute', is_array( $decoded ) && "It's \"quoted\" & <b>" === $decoded['hoverLabel'], $decoded['hoverLabel'] ?? null );
 t_check( 'raw attribute contains no unescaped double quote or <', isset( $mm[1] ) && false === strpos( $mm[1], '<' ) );
 t_check( 'fluid tag does NOT get data-bc-settings', false === strpos( $f, 'data-bc-settings' ) );
 t_check( 'unrelated handle untouched', "<script src='x.js'></script>" === $bc->filter_script_tag( "<script src='x.js'></script>", 'jquery' ) );
@@ -188,6 +188,43 @@ $o = array_merge( Bubble_Cursor::defaults(), array( 'hide_native' => 1, 'enable_
 t_check( 'stale saved hide_native is neutralised in JS settings', false === $bj->invoke( $bc, $o )['hideNativeCursor'] );
 $o['enable_dot'] = 1;
 t_check( 'JS hideNativeCursor true when a follower is on', true === $bj->invoke( $bc, $o )['hideNativeCursor'] );
+
+echo "\n[D2] hover label, ring blend, legacy hover_text\n";
+$d = Bubble_Cursor::defaults();
+t_check( 'defaults: hover word on, label View, ring blend normal', 1 === $d['hover_text'] && 'View' === $d['hover_label'] && '' === $d['ring_blend'] );
+$jsd = $bj->invoke( $bc, $d );
+t_check( 'JS settings: hoverText true + hoverLabel View + mixBlend empty', true === $jsd['hoverText'] && 'View' === $jsd['hoverLabel'] && '' === $jsd['mixBlend'], array( $jsd['hoverText'], $jsd['hoverLabel'], $jsd['mixBlend'] ) );
+t_check( 'JS settings carry no textSelector', ! array_key_exists( 'textSelector', $jsd ) );
+t_check( 'sanitize: label saved and trimmed', 'Open' === $san( array( 'hover_label' => '  Open ' ) )['hover_label'] );
+t_check( 'sanitize: blank label stays blank (no word)', '' === $san( array( 'hover_label' => '' ) )['hover_label'] );
+t_check( 'sanitize: missing label key falls back to View', 'View' === $san( array() )['hover_label'] );
+t_check( 'sanitize: tags stripped from the label', 'bx' === $san( array( 'hover_label' => '<script>b</script>x' ) )['hover_label'] || false === strpos( $san( array( 'hover_label' => '<b>x</b>' ) )['hover_label'], '<' ) );
+t_check( 'sanitize: label capped at 40 characters', 40 === strlen( $san( array( 'hover_label' => str_repeat( 'a', 90 ) ) )['hover_label'] ) );
+t_check( 'sanitize: hover_text checkbox on/off', 1 === $san( array( 'hover_text' => '1' ) )['hover_text'] && 0 === $san( array() )['hover_text'] );
+foreach ( array( '', 'screen', 'lighten', 'overlay', 'difference', 'exclusion', 'color-dodge', 'hard-light', 'soft-light' ) as $m ) {
+	t_check( "sanitize: ring_blend '$m' accepted", $m === $san( array( 'ring_blend' => $m ) )['ring_blend'] );
+}
+t_check( 'sanitize: unknown ring_blend rejected', '' === $san( array( 'ring_blend' => 'banana; x' ) )['ring_blend'] && '' === $san( array( 'ring_blend' => 'multiply' ) )['ring_blend'] );
+$o2 = array_merge( $d, array( 'ring_blend' => 'difference', 'hover_text' => 0, 'hover_label' => 'Go' ) );
+$js2 = $bj->invoke( $bc, $o2 );
+t_check( 'JS settings: ring_blend -> mixBlend, hover off -> hoverText false', 'difference' === $js2['mixBlend'] && false === $js2['hoverText'] && 'Go' === $js2['hoverLabel'] );
+// Pre-1.3.1 saved options: hover_text held the word itself.
+$GLOBALS['s']['options'][ BUBBLE_CURSOR_OPTION ] = array( 'hover_text' => 'Open' );
+$mig = Bubble_Cursor::get_options();
+t_check( 'legacy hover_text "Open" -> label Open, word on', 'Open' === $mig['hover_label'] && 1 === $mig['hover_text'], array( $mig['hover_text'], $mig['hover_label'] ) );
+$GLOBALS['s']['options'][ BUBBLE_CURSOR_OPTION ] = array( 'hover_text' => '' );
+$mig = Bubble_Cursor::get_options();
+t_check( 'legacy blank hover_text -> word off', 0 === $mig['hover_text'] );
+$GLOBALS['s']['options'][ BUBBLE_CURSOR_OPTION ] = array( 'hover_text' => 1, 'hover_label' => '' );
+$mig = Bubble_Cursor::get_options();
+t_check( 'new-style blank label is not overwritten by the default', '' === $mig['hover_label'] && 1 === $mig['hover_text'] );
+$GLOBALS['s']['options'][ BUBBLE_CURSOR_OPTION ] = array();
+$GLOBALS['s']['admin'] = true;
+ob_start();
+$bc->render_settings_page();
+$pg = ob_get_clean();
+$GLOBALS['s']['admin'] = false;
+t_check( 'settings page has the label field, the word switch and the ring blend select', false !== strpos( $pg, '[hover_label]' ) && false !== strpos( $pg, '[hover_text]' ) && false !== strpos( $pg, '[ring_blend]' ) && false !== strpos( $pg, 'value="exclusion"' ) );
 
 echo "\n[E] cache purge on settings save\n";
 t_check( 'hooked to update_option and add_option', ! empty( $GLOBALS['s']['actions'][ 'update_option_' . BUBBLE_CURSOR_OPTION ] ) && ! empty( $GLOBALS['s']['actions'][ 'add_option_' . BUBBLE_CURSOR_OPTION ] ) );

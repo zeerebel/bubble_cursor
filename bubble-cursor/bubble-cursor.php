@@ -3,7 +3,7 @@
  * Plugin Name:       Bubble Cursor — Smokey Fluid Cursor
  * Plugin URI:        https://github.com/zeerebel/bubble_cursor
  * Description:       Adds a colourful WebGL "smoke" fluid trail plus a dot + ring custom cursor with a "View" hover bubble — a replica of the TreeThemes "Deep" theme cursor. Works on any theme (Elementor or not). No coding required.
- * Version:           1.3.0
+ * Version:           1.3.1
  * Requires at least: 5.6
  * Requires PHP:      7.2
  * Author:            zeerebel
@@ -26,7 +26,7 @@ if ( defined( 'BUBBLE_CURSOR_VERSION' ) ) {
 	return;
 }
 
-define( 'BUBBLE_CURSOR_VERSION', '1.3.0' );
+define( 'BUBBLE_CURSOR_VERSION', '1.3.1' );
 define( 'BUBBLE_CURSOR_FILE', __FILE__ );
 define( 'BUBBLE_CURSOR_URL', plugin_dir_url( __FILE__ ) );
 define( 'BUBBLE_CURSOR_PATH', plugin_dir_path( __FILE__ ) );
@@ -110,7 +110,8 @@ if ( ! class_exists( 'Bubble_Cursor', false ) ) {
 				'hide_on_touch'         => 1,
 				'dot_color'             => '#ffffff',
 				'ring_color'            => '#ffffff',
-				'hover_text'            => 'View',
+				'hover_text'            => 1,         // Show a word in the ring on hover (on/off).
+				'hover_label'           => 'View',    // The default word; blank = no word.
 				'hover_selector'        => 'a[href], button:not(:disabled), input[type="submit"], input[type="button"], .elementor-button, [data-bubble-cursor-hover]',
 				// Shape & transparency.
 				'dot_size'              => 8,
@@ -119,6 +120,7 @@ if ( ! class_exists( 'Bubble_Cursor', false ) ) {
 				'cursor_opacity'        => 1,
 				'smoke_opacity'         => 1,
 				'smoke_blend'           => '',
+				'ring_blend'            => '',
 				// Smoke physics / intensity.
 				'colorful'              => 1,
 				'bloom'                 => 1,
@@ -140,6 +142,15 @@ if ( ! class_exists( 'Bubble_Cursor', false ) ) {
 		 */
 		private static function blend_modes() {
 			return array( '', 'screen', 'lighten', 'overlay', 'difference', 'color-dodge', 'hard-light', 'soft-light' );
+		}
+
+		/**
+		 * Allowed ring blend modes (the smoke list plus exclusion).
+		 *
+		 * @return string[]
+		 */
+		private static function ring_blend_modes() {
+			return array_merge( self::blend_modes(), array( 'exclusion' ) );
 		}
 
 		/**
@@ -169,6 +180,11 @@ if ( ! class_exists( 'Bubble_Cursor', false ) ) {
 			$saved = get_option( BUBBLE_CURSOR_OPTION, array() );
 			if ( ! is_array( $saved ) ) {
 				$saved = array();
+			}
+			// Before 1.3.1 'hover_text' held the word itself (blank = off). Carry that over.
+			if ( array_key_exists( 'hover_text', $saved ) && ! array_key_exists( 'hover_label', $saved ) && is_string( $saved['hover_text'] ) && ! in_array( $saved['hover_text'], array( '0', '1' ), true ) ) {
+				$saved['hover_label'] = $saved['hover_text'];
+				$saved['hover_text']  = '' === $saved['hover_text'] ? 0 : 1;
 			}
 			return wp_parse_args( $saved, self::defaults() );
 		}
@@ -383,7 +399,8 @@ if ( ! class_exists( 'Bubble_Cursor', false ) ) {
 					'hideOnTouch'      => (bool) $o['hide_on_touch'],
 					'dotColor'         => $o['dot_color'],
 					'ringColor'        => $o['ring_color'],
-					'hoverText'        => '' === $o['hover_text'] ? false : $o['hover_text'],
+					'hoverText'        => (bool) $o['hover_text'],
+					'hoverLabel'       => (string) $o['hover_label'],
 					'hoverSelector'    => $o['hover_selector'],
 					'dotSize'          => (float) $o['dot_size'],
 					'ringSize'         => (float) $o['ring_size'],
@@ -391,6 +408,7 @@ if ( ! class_exists( 'Bubble_Cursor', false ) ) {
 					'cursorOpacity'    => (float) $o['cursor_opacity'],
 					'smokeOpacity'     => (float) $o['smoke_opacity'],
 					'smokeBlend'       => $o['smoke_blend'],
+					'mixBlend'         => $o['ring_blend'],
 					'fluid'            => array(
 						'SPLAT_FORCE'          => (float) $o['splat_force'],
 						'SPLAT_RADIUS'         => (float) $o['splat_radius'],
@@ -470,7 +488,9 @@ if ( ! class_exists( 'Bubble_Cursor', false ) ) {
 			$out['dot_color']  = $this->sanitize_color( isset( $input['dot_color'] ) ? $input['dot_color'] : $d['dot_color'], $d['dot_color'] );
 			$out['ring_color'] = $this->sanitize_color( isset( $input['ring_color'] ) ? $input['ring_color'] : $d['ring_color'], $d['ring_color'] );
 
-			$out['hover_text']     = isset( $input['hover_text'] ) ? sanitize_text_field( $input['hover_text'] ) : $d['hover_text'];
+			$out['hover_text']     = empty( $input['hover_text'] ) ? 0 : 1;
+			// The default word may be blank (no word); only a missing key falls back to 'View'.
+			$out['hover_label']    = isset( $input['hover_label'] ) ? mb_substr( sanitize_text_field( $input['hover_label'] ), 0, 40 ) : $d['hover_label'];
 			$out['hover_selector'] = isset( $input['hover_selector'] ) ? sanitize_text_field( $input['hover_selector'] ) : $d['hover_selector'];
 			if ( '' === trim( $out['hover_selector'] ) ) {
 				$out['hover_selector'] = $d['hover_selector'];
@@ -498,6 +518,9 @@ if ( ! class_exists( 'Bubble_Cursor', false ) ) {
 
 			$blend              = isset( $input['smoke_blend'] ) ? $input['smoke_blend'] : $d['smoke_blend'];
 			$out['smoke_blend'] = in_array( $blend, self::blend_modes(), true ) ? $blend : $d['smoke_blend'];
+
+			$ring_blend         = isset( $input['ring_blend'] ) ? $input['ring_blend'] : $d['ring_blend'];
+			$out['ring_blend']  = in_array( $ring_blend, self::ring_blend_modes(), true ) ? $ring_blend : $d['ring_blend'];
 
 			return $out;
 		}
@@ -583,10 +606,17 @@ if ( ! class_exists( 'Bubble_Cursor', false ) ) {
 							<td><input type="text" class="regular-text" name="<?php echo esc_attr( $n ); ?>[ring_color]" value="<?php echo esc_attr( $o['ring_color'] ); ?>" placeholder="#ffffff"></td>
 						</tr>
 						<tr>
-							<th scope="row"><?php esc_html_e( 'Hover text', 'bubble-cursor' ); ?></th>
+							<th scope="row"><?php esc_html_e( 'Hover word', 'bubble-cursor' ); ?></th>
 							<td>
-								<input type="text" class="regular-text" name="<?php echo esc_attr( $n ); ?>[hover_text]" value="<?php echo esc_attr( $o['hover_text'] ); ?>" placeholder="View">
-								<p class="description"><?php esc_html_e( 'Word shown inside the ring when hovering elements that carry a hover label. Leave blank to disable. Add data-bubble-cursor-text="Open" to any element to override per-element. Elementor containers using the "Cursor Hover Effect Text" setting are detected automatically.', 'bubble-cursor' ); ?></p>
+								<label><input type="checkbox" name="<?php echo esc_attr( $n ); ?>[hover_text]" value="1" <?php checked( $o['hover_text'], 1 ); ?>> <?php esc_html_e( 'Show a word inside the ring when hovering', 'bubble-cursor' ); ?></label>
+								<p class="description"><?php esc_html_e( 'Turn off to get only the enlarged ring, never a word (this also ignores data-bubble-cursor-text and the Elementor setting).', 'bubble-cursor' ); ?></p>
+							</td>
+						</tr>
+						<tr>
+							<th scope="row"><?php esc_html_e( 'Default hover label', 'bubble-cursor' ); ?></th>
+							<td>
+								<input type="text" class="regular-text" maxlength="40" name="<?php echo esc_attr( $n ); ?>[hover_label]" value="<?php echo esc_attr( $o['hover_label'] ); ?>" placeholder="View">
+								<p class="description"><?php esc_html_e( 'The word shown for links and buttons that have no label of their own (default "View"). Leave blank for no default word. Add data-bubble-cursor-text="Open" to any element to override per element, data-bubble-cursor-no-text (or an empty data-bubble-cursor-text) to show no word on it. Elementor containers using the "Cursor Hover Effect Text" setting are detected automatically.', 'bubble-cursor' ); ?></p>
 							</td>
 						</tr>
 						<tr>
@@ -594,6 +624,17 @@ if ( ! class_exists( 'Bubble_Cursor', false ) ) {
 							<td>
 								<input type="text" class="large-text code" name="<?php echo esc_attr( $n ); ?>[hover_selector]" value="<?php echo esc_attr( $o['hover_selector'] ); ?>">
 								<p class="description"><?php esc_html_e( 'CSS selector for elements that trigger the enlarged ring (advanced).', 'bubble-cursor' ); ?></p>
+							</td>
+						</tr>
+						<tr>
+							<th scope="row"><?php esc_html_e( 'Ring blend mode', 'bubble-cursor' ); ?></th>
+							<td>
+								<select name="<?php echo esc_attr( $n ); ?>[ring_blend]">
+									<?php foreach ( self::ring_blend_modes() as $mode ) : ?>
+										<option value="<?php echo esc_attr( $mode ); ?>" <?php selected( $o['ring_blend'], $mode ); ?>><?php echo '' === $mode ? esc_html__( 'Normal', 'bubble-cursor' ) : esc_html( $mode ); ?></option>
+									<?php endforeach; ?>
+								</select>
+								<p class="description"><?php esc_html_e( '"difference" or "exclusion" keep the ring visible over both light and dark areas.', 'bubble-cursor' ); ?></p>
 							</td>
 						</tr>
 					</table>

@@ -7,6 +7,16 @@
  * own <script id="bubble-cursor-js"> tag (survives optimizers that drop or
  * delay the inline script), then built-in defaults (one console.warn).
  *
+ * One cursor only: if another Flux cursor plugin has flagged itself
+ * (window.__fluxJellyActive, __superCursorActive, __sdcpJellyActive,
+ * __sdcpDualActive) this script stands down, draws nothing and leaves the
+ * native cursor alone. It sets window.__bubbleCursorBooted when it starts so
+ * a sibling that boots later can do the same check.
+ *
+ * Reduced motion is live: the follower and the smoke are removed (and the
+ * native cursor comes back) when the preference turns on, and rebuilt when it
+ * turns off.
+ *
  * State that decides visibility lives on the dot/ring elements, not on <html>
  * classes. The html.bc-* classes are markers that are re-asserted if a host
  * script rewrites document.documentElement.className.
@@ -16,6 +26,23 @@
 
   var DEFAULT_HOVER_SELECTOR = 'a[href], button:not(:disabled), input[type="submit"], input[type="button"], .elementor-button, [data-bubble-cursor-hover]';
   var EDITOR_QUERY = /[?&](vc_editable|vc_action|elementor-preview|et_fb|fl_builder|ct_builder|brizy-edit|brizy-edit-iframe|customize_changeset_uuid|customize_messenger_channel)(=|&|$)/;
+
+  var OTHER_CURSOR_FLAGS = ['__fluxJellyActive', '__superCursorActive', '__sdcpJellyActive', '__sdcpDualActive'];
+  var warnedOther = false;
+
+  // Returns the name of the first other-cursor flag that is truthy, or ''.
+  function otherCursor() {
+    for (var i = 0; i < OTHER_CURSOR_FLAGS.length; i++) {
+      if (window[OTHER_CURSOR_FLAGS[i]]) return OTHER_CURSOR_FLAGS[i];
+    }
+    return '';
+  }
+
+  function standDown(flag) {
+    if (warnedOther) return;
+    warnedOther = true;
+    warn('another cursor plugin is active (window.' + flag + '); standing down so only one cursor is drawn.');
+  }
 
   function warn() {
     if (window.console && console.warn) {
@@ -100,6 +127,9 @@
 
     if (alreadyBooted()) return;
 
+    var other = otherCursor();
+    if (other) { standDown(other); return; }
+
     var s = loadSettings();
     var num = function (v, d) { return (v === undefined || v === null || isNaN(v)) ? d : Number(v); };
 
@@ -111,9 +141,11 @@
       hideOnTouch: s.hideOnTouch !== undefined ? !!s.hideOnTouch : true,
       dotColor: s.dotColor || '#ffffff',
       ringColor: s.ringColor || '#ffffff',
-      hoverText: s.hoverText !== undefined ? s.hoverText : 'View',
+      // hoverText is the on/off switch for any word; hoverLabel is the default word.
+      // Older PHP sent the word itself as hoverText (false = off), still honoured.
+      hoverText: !(s.hoverText === false || s.hoverText === 0 || s.hoverText === ''),
+      hoverLabel: typeof s.hoverLabel === 'string' ? s.hoverLabel : (typeof s.hoverText === 'string' && s.hoverText ? s.hoverText : 'View'),
       hoverSelector: s.hoverSelector || DEFAULT_HOVER_SELECTOR,
-      textSelector: s.textSelector || '[data-bubble-cursor-text]',
       ringSize: num(s.ringSize, 40),
       dotSize: num(s.dotSize, 8),
       ringBorder: num(s.ringBorder, 1.5),
@@ -160,16 +192,18 @@
       // Once-only: a second copy of the script (or another cursor) must not
       // create a second set of canvas/dot/ring.
       if (alreadyBooted()) return;
+      // A sibling may have booted while we waited for a real mouse.
+      var late = otherCursor();
+      if (late) { standDown(late); return; }
       window.__bubbleCursorBooted = true;
 
-      var reduced = prefersReducedMotion();
       var root = document.documentElement;
 
       /* ---- Fluid (smoke) layer ------------------------------------- */
       var canvas = null;
 
       function mountFluid() {
-        if (!(settings.enableFluid && !reduced && window.BubbleCursorFluid)) return;
+        if (!(settings.enableFluid && !prefersReducedMotion() && window.BubbleCursorFluid)) return;
         unmountFluid();
         canvas = document.createElement('canvas');
         canvas.className = 'bc-fluid-canvas';
@@ -192,9 +226,14 @@
 
       /* ---- Dot + ring follower ------------------------------------- */
       var dot = null, ring = null, ringLabel = null;
-      var hasFollower = (settings.enableDot || settings.enableRing) && !reduced;
+      var followerOn = false;
 
-      if (hasFollower) {
+      function wantFollower() {
+        return (settings.enableDot || settings.enableRing) && !prefersReducedMotion();
+      }
+
+      function mountFollower() {
+        if (followerOn) return;
         if (settings.enableDot) {
           dot = document.createElement('div');
           dot.className = 'bc-dot';
@@ -225,6 +264,7 @@
           ring.appendChild(ringLabel);
           document.body.appendChild(ring);
         }
+        followerOn = true;
       }
 
       /* ---- State + <html> markers ---------------------------------- */
@@ -249,7 +289,7 @@
         toggleClass('bc-down', down);
         // Hide the native pointer only while something is actually drawn in
         // its place: a follower exists, motion is allowed and it has appeared.
-        toggleClass('bc-hide-native', settings.hideNativeCursor && hasFollower && visible);
+        toggleClass('bc-hide-native', settings.hideNativeCursor && followerOn && visible);
       }
 
       function observeMarkers() {
@@ -284,8 +324,22 @@
         syncMarkers();
       }
 
+      // Remove the follower and give the native cursor back (reduced motion on).
+      function unmountFollower() {
+        if (rafId) window.cancelAnimationFrame(rafId);
+        rafId = null;
+        [dot, ring].forEach(function (el) {
+          if (el && el.parentNode) el.parentNode.removeChild(el);
+        });
+        dot = null; ring = null; ringLabel = null;
+        followerOn = false;
+        visible = false;
+        hoverState = null;
+        down = false;
+        syncMarkers();
+      }
+
       observeMarkers();
-      syncMarkers();
 
       /* ---- Movement (lerp follow) ---------------------------------- */
       var mouseX = window.innerWidth / 2, mouseY = window.innerHeight / 2;
@@ -317,6 +371,7 @@
       }
 
       function onMove(e) {
+        if (!followerOn) return;
         mouseX = e.clientX;
         mouseY = e.clientY;
         if (!visible) {
@@ -332,43 +387,50 @@
         wakeRing();
       }
 
-      if (hasFollower) {
+      // Listeners are attached once and gated on followerOn, so a live
+      // reduced-motion toggle never has to add or remove them.
+      if (settings.enableDot || settings.enableRing) {
         window.addEventListener('mousemove', onMove, { passive: true });
         window.addEventListener('mouseout', function (e) {
-          if (!e.relatedTarget && !e.toElement) setVisible(false);
+          if (followerOn && !e.relatedTarget && !e.toElement) setVisible(false);
         });
-        document.addEventListener('mousedown', function () { down = true; syncMarkers(); });
-        document.addEventListener('mouseup', function () { down = false; syncMarkers(); });
+        document.addEventListener('mousedown', function () { if (followerOn) { down = true; syncMarkers(); } });
+        document.addEventListener('mouseup', function () { if (followerOn) { down = false; syncMarkers(); } });
       }
 
-      /* ---- Hover state + "View" text ------------------------------- */
-      function resolveHoverText(el) {
-        // Explicit per-element text wins (data attribute or Elementor container setting).
+      /* ---- Hover state + hover word -------------------------------- */
+      // The word for a hovered element: '' means no word (plain enlarged ring).
+      // Order: opt-out attribute, the element's own data-bubble-cursor-text
+      // (an empty one is an opt-out too), the Elementor setting, then the
+      // default label for elements matching the hover selector.
+      function hoverWord(el, isHover) {
+        if (el.closest('[data-bubble-cursor-no-text]')) return '';
         var explicit = el.closest('[data-bubble-cursor-text]');
-        if (explicit) return explicit.getAttribute('data-bubble-cursor-text');
+        if (explicit) return explicit.getAttribute('data-bubble-cursor-text') || '';
         var elementor = el.closest('[data-settings]');
         if (elementor) {
           try {
             var data = JSON.parse(elementor.getAttribute('data-settings'));
             if (data && data.wcf_enable_cursor_hover_effect_text) {
-              return data.wcf_enable_cursor_hover_effect_text;
+              return String(data.wcf_enable_cursor_hover_effect_text);
             }
           } catch (err) { /* ignore malformed JSON */ }
         }
-        return null;
+        return isHover ? settings.hoverLabel : '';
       }
 
-      if (hasFollower) {
+      if (settings.enableDot || settings.enableRing) {
         document.addEventListener('mouseover', function (e) {
+          if (!followerOn) return;
           try {
             var target = e.target;
             if (!target || !target.closest) return;
 
-            var text = resolveHoverText(target);
             var isHover = !!target.closest(settings.hoverSelector);
+            var word = settings.hoverText ? hoverWord(target, isHover) : '';
 
-            if (text && settings.hoverText !== false) {
-              setHover('text', text);
+            if (word) {
+              setHover('text', word);
             } else if (isHover) {
               setHover('hover');
             }
@@ -376,6 +438,7 @@
         });
 
         document.addEventListener('mouseout', function (e) {
+          if (!followerOn) return;
           try {
             var target = e.target;
             if (!target || !target.closest) return;
@@ -389,8 +452,29 @@
         });
       }
 
+      /* ---- Live reduced motion ------------------------------------- */
+      function applyMotionPref() {
+        if (stopped) return;
+        if (prefersReducedMotion()) {
+          unmountFollower();
+          unmountFluid();
+        } else {
+          if (wantFollower()) mountFollower();
+          if (!canvas) mountFluid();
+          syncMarkers();
+        }
+      }
+
+      var motionQuery = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
+      if (motionQuery) {
+        if (motionQuery.addEventListener) motionQuery.addEventListener('change', applyMotionPref);
+        else if (motionQuery.addListener) motionQuery.addListener(applyMotionPref);
+      }
+
+      if (wantFollower()) mountFollower();
+      syncMarkers();
       mountFluid();
-      if (firstEvent && hasFollower) onMove(firstEvent);
+      if (firstEvent && followerOn) onMove(firstEvent);
 
       /* ---- Page lifecycle (unload + bfcache) ------------------------ */
       window.addEventListener('pagehide', function () {
@@ -407,8 +491,8 @@
       window.addEventListener('pageshow', function (e) {
         if (!e.persisted || !stopped) return;
         stopped = false;
-        mountFluid();
         observeMarkers();
+        applyMotionPref(); // rebuilds the smoke (and honours a reduced-motion change made while away)
         syncMarkers();
         wakeRing();
       });
