@@ -4,7 +4,7 @@
 >
 > | | |
 > | --- | --- |
-> | **What this is** | Bubble Cursor — WordPress plugin, WebGL smoke trail + dot/ring cursor with "View" hover bubble. v1.1.0. Plugin lives in the `bubble-cursor/` subfolder; `demo/`, `Exposure.html` and the screenshot are reference material. |
+> | **What this is** | Bubble Cursor — WordPress plugin, WebGL smoke trail + dot/ring cursor with "View" hover bubble. v1.3.1. Plugin lives in the `bubble-cursor/` subfolder; `demo/`, `Exposure.html` and the screenshot are reference material. |
 > | **Status** | **CANONICAL for the standalone plugin** — but the *identical* code is already built into the Reframe theme as Cursor Style "Bubble". |
 > | **Planned repo name** | `flux-bubble-cursor` |
 > | **With the Reframe theme** | ✅ Use **either** the theme's Cursor Style = Bubble **or** this plugin with the theme cursor Off — never both (two cursors). |
@@ -17,6 +17,8 @@ be replicated in WordPress?** Short answer: **yes**, and it's included here as a
 ready-to-install plugin.
 
 ![Smoke trail over the hero](demo/preview-smoke.png)
+
+**Part of the Flux family:** see [FAMILY.md](FAMILY.md) for how the Flux plugins fit together (shared Flux dashboard, support card, one-cursor rule). Final repo name: `flux-bubble-cursor`; it is in the `cursor` group, so only one cursor plugin should be active.
 
 ## What that cursor actually is
 
@@ -52,7 +54,11 @@ layers and exposes them through a settings screen — **no theme edits, no code*
 
 ### Install
 
-1. Zip the `bubble-cursor` folder (so the zip contains `bubble-cursor/bubble-cursor.php`).
+1. Build the zip from the repo root (the `--prefix` makes the zip contain `flux-bubble-cursor/` as its top folder; the plugin file inside is still `bubble-cursor.php`):
+
+   ```bash
+   git archive --format=zip --prefix=flux-bubble-cursor/ -o flux-bubble-cursor.zip HEAD:bubble-cursor
+   ```
 2. WordPress admin → **Plugins → Add New → Upload Plugin** → choose the zip → **Activate**.
 3. Open **Settings → Bubble Cursor**. Defaults already match the Deep demo.
 
@@ -64,7 +70,7 @@ You can also just copy the `bubble-cursor` folder into
 * Master on/off, and whether it loads site-wide or on the front page only.
 * Toggle each layer independently: smoke, ring, dot, and whether to hide the
   native OS cursor (the Deep demo keeps it visible — that's the default).
-* Dot / ring colours, the hover word (default **View**), and the hover selector.
+* Dot / ring colours, the hover word (an on/off switch plus a **Default hover label**, default **View**, blank = no word), the hover selector and a **Ring blend mode**.
 * **Shape, size & transparency:** dot size, ring size, ring thickness, cursor
   opacity, and smoke opacity.
 * **Smoke physics & intensity:** colourful on/off, bloom glow + intensity,
@@ -77,16 +83,21 @@ You can also just copy the `bubble-cursor` folder into
 The engine is built defensively for live use: GPU framebuffers are freed on
 every resize (no memory leak), resize handling is debounced, WebGL context-loss
 is handled, and both the render loop and the front-end init are wrapped so a
-cursor error fails silently instead of taking the page down. It also bails on
-touch devices, respects "reduced motion", and does nothing if the browser has
-no WebGL.
+cursor error fails silently instead of taking the page down. It also stays
+off on touch-only devices, respects "reduced motion", and does nothing if the
+browser has no WebGL. Since 1.2.0 it also survives hostile host themes and
+optimizer plugins (see "Notes on behaviour" below).
 
-### Per-element hover text (optional)
+### Hover word (default label and per-element text)
 
-Add an attribute to any element to control the hover bubble:
+Links and buttons that match the hover selector show the **Default hover label**
+(**View** unless you change it; leave it blank for no word). Turn the whole word
+off with **Hover word** unchecked. Add an attribute to any element to control it:
 
 ```html
 <a href="/work" data-bubble-cursor-text="Open">My project</a>
+<a href="/plain" data-bubble-cursor-no-text>Enlarged ring, no word</a>
+<a href="/plain2" data-bubble-cursor-text="">Same: an empty text is an opt-out</a>
 <div data-bubble-cursor-hover>Triggers the enlarged ring</div>
 ```
 
@@ -109,13 +120,54 @@ php -S 127.0.0.1:8765
 
 ## Notes on behaviour
 
-* **Touch devices:** the cursor is disabled — a fluid mouse trail is meaningless
-  on a touchscreen.
-* **Reduced motion:** if a visitor's OS requests reduced motion, the heavy smoke
-  layer is skipped.
+* **Touch devices and touch-screen laptops:** phones and tablets (no hover-capable
+  fine pointer) get no cursor. The check is by capability, not by "has a touch
+  screen", so a touch-screen laptop with a mouse or trackpad gets the cursor,
+  and a device that only reports touch stays dormant and switches on the first
+  time a real mouse is moved (taps never do).
+* **Page-builder editors:** the cursor is not loaded in the Customizer preview,
+  the WPBakery frontend editor (`?vc_editable`), Elementor's preview/editor,
+  Divi (`et_fb`), Beaver Builder, Oxygen/Breakdance-style `ct_builder`, or
+  Brizy, so it never draws over the editing surface. The
+  `bubble_cursor_should_load` filter still lets you decide for other cases.
+* **Reduced motion:** if a visitor's OS requests reduced motion, nothing is drawn
+  (and the native cursor is never hidden). Since 1.3.1 this is live: turning the
+  preference on mid-visit removes the dot, ring and smoke and brings the native
+  cursor back; turning it off starts them again.
+* **One cursor only:** if another Flux cursor plugin has flagged itself
+  (`window.__fluxJellyActive`, `__superCursorActive`, `__sdcpJellyActive`,
+  `__sdcpDualActive`), Bubble Cursor draws nothing, leaves the native cursor
+  alone and logs one `console.warn`. When it starts it sets
+  `window.__bubbleCursorBooted` so a sibling can check for it.
+* **Hide native cursor:** only applied while the custom cursor is actually
+  showing; ignored if both the dot and the ring are off.
+* **Optimizers (WP Rocket, LiteSpeed, Rocket Loader, Autoptimize...):** both
+  scripts are tagged with the common opt-out attributes, and the settings are
+  also mirrored in a `data-bc-settings` attribute on the script tag, so a
+  delayed or stripped inline script no longer resets your settings to defaults.
+  If neither copy is found the cursor logs one `console.warn` and uses defaults.
+* **Cache purge:** saving the settings purges WP Rocket, LiteSpeed, W3 Total
+  Cache, Autoptimize and SG Optimizer page caches (each only if installed),
+  because settings are baked into the page HTML.
+* **Once-only guard:** if the cursor code is loaded twice (a duplicate plugin
+  copy, or alongside another cursor), only one set of canvas/dot/ring is
+  created, and a second copy of the PHP file returns quietly instead of
+  fataling. It is therefore safe if the Reframe theme's built-in **Bubble**
+  cursor is also on, but you should still use only one of the two.
+* **Host scripts that rewrite `<html class>`:** cursor visibility and hover state
+  live on the cursor elements themselves, and the `html.bc-*` marker classes are
+  re-applied if a script wipes them.
 * **No WebGL:** the smoke silently does nothing; the dot/ring still work.
-* **Performance:** the simulation runs at a capped device-pixel-ratio and pauses
-  cleanly on page unload.
+* **Performance:** the simulation runs at a capped device-pixel-ratio, pauses
+  cleanly on page unload, and stops drawing entirely once the pointer has been
+  idle long enough for the smoke to fade (it resumes on the next mouse move).
+  Back/forward-cache restores rebuild the smoke layer.
+
+## Tests
+
+`tests/` has a Chromium-only Playwright suite and a stubbed-WordPress PHP
+harness; run `./tests/run.sh`. See `tests/README.md`. Firefox, Safari and iOS
+WebKit are **not** covered by it.
 
 ## Credits & license
 
@@ -127,3 +179,28 @@ php -S 127.0.0.1:8765
 
 `Exposure.html` and the screenshot in this repo are the original reference
 material used to identify the effect.
+
+<!-- flux-family:start -->
+## The Flux family
+
+This plugin has siblings: the **Flux family** are small WordPress plugins that work on their own and work together, with a shared "Flux" admin dashboard, one support card and one set of rules (see [FAMILY.md](./FAMILY.md)). Only run one custom-cursor plugin at a time.
+
+| Plugin | Repo | Group | Version |
+| --- | --- | --- | --- |
+| Flux Reel | [`zeerebel/kurato`](https://github.com/zeerebel/kurato) | ui | 1.3.1 |
+| Flux Backgrounds | [`zeerebel/flux-backgrounds`](https://github.com/zeerebel/flux-backgrounds) | visual | 0.10.0 |
+| Flux Preloader | [`zeerebel/flux-preloader`](https://github.com/zeerebel/flux-preloader) | visual | 1.5.1 |
+| Flux Reveal | [`zeerebel/flux-reveal`](https://github.com/zeerebel/flux-reveal) | visual | 1.8.1 |
+| Flux Smooth Scroll | [`zeerebel/fluxsmoothscroll`](https://github.com/zeerebel/fluxsmoothscroll) | scroll | 1.3.1 |
+| Flux Scroll Progress | [`zeerebel/fluxscrollprogress`](https://github.com/zeerebel/fluxscrollprogress) | scroll | 1.4.1 |
+| Flux Jelly Cursor | [`zeerebel/fluxjellycursor`](https://github.com/zeerebel/fluxjellycursor) | cursor | 1.4.1 |
+| **Flux Bubble Cursor (this plugin)** | [`zeerebel/bubble_cursor`](https://github.com/zeerebel/bubble_cursor) | cursor | 1.3.1 |
+| Super Duper Cursor | [`zeerebel/super-duper-cursor`](https://github.com/zeerebel/super-duper-cursor) | cursor | 3.2.0 |
+| Super Duper Cursor Pro | [`zeerebel/super-duper-cursor-pro`](https://github.com/zeerebel/super-duper-cursor-pro) | cursor | 4.3.1 |
+| Flux Core | [`zeerebel/flux-core`](https://github.com/zeerebel/flux-core) | ui | 1.0.0 |
+| Flux Split | [`zeerebel/flux-split`](https://github.com/zeerebel/flux-split) | visual | 1.1.0 |
+| Flux Marquee | [`zeerebel/flux-marquee`](https://github.com/zeerebel/flux-marquee) | visual | 1.0.0 |
+| Flux Pin | [`zeerebel/flux-pin`](https://github.com/zeerebel/flux-pin) | scroll | 1.0.0 |
+| Flux Magnetic | [`zeerebel/flux-magnetic`](https://github.com/zeerebel/flux-magnetic) | ui | 1.0.0 |
+| Flux Distort | [`zeerebel/flux-distort`](https://github.com/zeerebel/flux-distort) | visual | 1.0.0 |
+<!-- flux-family:end -->

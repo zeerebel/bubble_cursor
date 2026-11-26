@@ -4,7 +4,7 @@ Tags: cursor, custom cursor, fluid, webgl, smoke, mouse, elementor
 Requires at least: 5.6
 Tested up to: 6.8
 Requires PHP: 7.2
-Stable tag: 1.1.0
+Stable tag: 1.3.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -29,10 +29,15 @@ each layer, colours, hover text, where it loads, and the smoke physics.
 
 Performance & accessibility:
 
-* Hidden automatically on touch devices (phones/tablets).
+* Hidden automatically on touch-only devices (phones/tablets). Touch-screen
+  laptops used with a mouse or trackpad still get the cursor.
+* Not loaded inside page-builder editors and previews (WPBakery, Elementor,
+  Divi, Beaver Builder, Brizy, the Customizer).
 * The heavy smoke layer is disabled for visitors who set
   "prefers reduced motion" in their OS.
 * Gracefully does nothing if the browser has no WebGL.
+
+Part of the Flux family: see FAMILY.md in the repository for how the Flux plugins fit together (one shared Flux dashboard in the admin, one support card, one-cursor rule).
 
 == Installation ==
 
@@ -49,7 +54,7 @@ No. It runs on any theme. Elementor "Cursor Hover Effect Text" settings are
 picked up automatically when present.
 
 = How do I show custom hover text on a specific element? =
-Add `data-bubble-cursor-text="Open"` (or any word) to the element.
+Add `data-bubble-cursor-text="Open"` (or any word) to the element. Links and buttons without their own text show the "Default hover label" from the settings ("View" by default; blank for no word). Add `data-bubble-cursor-no-text` (or an empty `data-bubble-cursor-text=""`) to an element to show no word on it.
 
 = How do I make an element trigger the enlarged ring? =
 It already triggers on links and buttons. For anything else, add
@@ -59,7 +64,73 @@ settings.
 = It does not show on my phone =
 That is intentional — a fluid mouse cursor has no meaning on touch screens.
 
+= It does not show on my touch-screen laptop =
+It should: the plugin checks for a hover-capable fine pointer rather than for a
+touch screen. If a browser reports touch only, the cursor starts the first time
+a real mouse is moved.
+
+= Why is the cursor missing in the page builder editor? =
+On purpose. It is not loaded in the WPBakery frontend editor, Elementor editor
+and preview, Divi/Beaver Builder/Brizy editors or the Customizer preview, so it
+does not cover the editing surface. Use the `bubble_cursor_should_load` filter
+if you need different behaviour.
+
+= My optimizer / caching plugin breaks the settings =
+Both scripts carry the usual opt-out attributes (data-no-optimize,
+data-no-defer, data-cfasync="false", nowprocket and friends) and the settings
+are also stored on the script tag as `data-bc-settings`, so they survive a
+delayed or removed inline script. Saving the settings purges WP Rocket,
+LiteSpeed, W3 Total Cache, Autoptimize and SG Optimizer caches.
+
+= Can I run it next to the Reframe theme cursor? =
+It will not create a second cursor (a once-only guard stops duplicates), but
+you should still enable only one: the theme's Cursor Style "Bubble" or this
+plugin.
+
+= "Hide native cursor" left me without a pointer =
+Fixed in 1.2.0: the native pointer is only hidden while the custom cursor is
+visible, never for reduced-motion visitors, and the option is ignored if both
+the dot and the ring are off.
+
 == Changelog ==
+
+= 1.3.1 =
+* Fix: the "View" hover word is now real. New "Hover word" switch and "Default hover label" setting (default "View", blank = no word); links and buttons without their own `data-bubble-cursor-text` show it. `data-bubble-cursor-no-text` (or an empty `data-bubble-cursor-text`) opts an element out. Older saved settings are carried over.
+* New: "Ring blend mode" setting (normal, screen, lighten, overlay, difference, exclusion, color-dodge, hard-light, soft-light).
+* Fix: reduced motion is now live. Turning the preference on while a page is open removes the dot, ring and smoke and restores the native cursor; turning it off starts them again. The CSS that hides the native cursor only applies while motion is allowed.
+* New: one cursor only. If another Flux cursor plugin has flagged itself, Bubble Cursor draws nothing, leaves the native cursor alone and logs one console warning.
+* Removed: the unused `textSelector` setting.
+* Docs: exact build command for the zip.
+
+= 1.3.0 =
+* New: joins the Flux family. A shared "Flux" admin dashboard (lists the active Flux plugins, their versions and settings links, and warns if two cursor plugins are active) and a support card at the foot of Settings > Bubble Cursor, which can be hidden under Flux > Options. Admin only: nothing changes on the front end, and the plugin still works alone.
+* New: the repository now has a root LICENSE file (GPL-2.0).
+
+= 1.2.0 =
+* Fix: cursor no longer disappears for good when a theme or optimizer script
+  rewrites the `<html>` class; state now lives on the cursor elements and the
+  html marker classes are re-asserted.
+* Fix: touch-screen laptops with a mouse get the cursor (capability check
+  instead of touch detection); phones and tablets still do not.
+* Fix: "Hide native cursor" can no longer leave visitors with no pointer
+  (reduced motion, both followers off, before the cursor appears).
+* Fix: back/forward-cache restores rebuild the smoke and ring instead of
+  leaving them dead; WebGL context restore rebuilds the smoke.
+* Fix: an invalid hover selector no longer throws on every mouse move.
+* New: not loaded in page-builder editors/previews and the Customizer.
+* New: loading the cursor twice does not create two cursors; a second copy of
+  the plugin file no longer causes a PHP fatal.
+* New: optimizer opt-out attributes on both scripts, settings mirrored in a
+  `data-bc-settings` attribute, one console warning if defaults are used.
+* New: page caches are purged when settings are saved.
+* Performance: the smoke loop and the ring stop drawing when the pointer is
+  idle and the smoke has faded, and resume on mouse move.
+* CSS: ring size no longer depends on the host's box-sizing; hover sizes follow
+  the configured ring size; hover fill/label colours follow the ring colour;
+  smoke canvas no longer uses 100vw/100vh.
+* WebGL2: linear filtering is no longer gated on OES_texture_float_linear
+  (not verified on Safari/iOS hardware).
+* Housekeeping: uninstall handles multisite; asset versions include file mtime.
 
 = 1.1.0 =
 * New controls: dot/ring size, ring thickness, cursor opacity, smoke opacity,
