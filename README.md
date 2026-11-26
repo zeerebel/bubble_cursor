@@ -4,7 +4,7 @@
 >
 > | | |
 > | --- | --- |
-> | **What this is** | Bubble Cursor — WordPress plugin, WebGL smoke trail + dot/ring cursor with "View" hover bubble. v1.3.0. Plugin lives in the `bubble-cursor/` subfolder; `demo/`, `Exposure.html` and the screenshot are reference material. |
+> | **What this is** | Bubble Cursor — WordPress plugin, WebGL smoke trail + dot/ring cursor with "View" hover bubble. v1.3.1. Plugin lives in the `bubble-cursor/` subfolder; `demo/`, `Exposure.html` and the screenshot are reference material. |
 > | **Status** | **CANONICAL for the standalone plugin** — but the *identical* code is already built into the Reframe theme as Cursor Style "Bubble". |
 > | **Planned repo name** | `flux-bubble-cursor` |
 > | **With the Reframe theme** | ✅ Use **either** the theme's Cursor Style = Bubble **or** this plugin with the theme cursor Off — never both (two cursors). |
@@ -54,7 +54,11 @@ layers and exposes them through a settings screen — **no theme edits, no code*
 
 ### Install
 
-1. Zip the `bubble-cursor` folder (so the zip contains `bubble-cursor/bubble-cursor.php`).
+1. Build the zip from the repo root (the `--prefix` makes the zip contain `flux-bubble-cursor/` as its top folder; the plugin file inside is still `bubble-cursor.php`):
+
+   ```bash
+   git archive --format=zip --prefix=flux-bubble-cursor/ -o flux-bubble-cursor.zip HEAD:bubble-cursor
+   ```
 2. WordPress admin → **Plugins → Add New → Upload Plugin** → choose the zip → **Activate**.
 3. Open **Settings → Bubble Cursor**. Defaults already match the Deep demo.
 
@@ -66,7 +70,7 @@ You can also just copy the `bubble-cursor` folder into
 * Master on/off, and whether it loads site-wide or on the front page only.
 * Toggle each layer independently: smoke, ring, dot, and whether to hide the
   native OS cursor (the Deep demo keeps it visible — that's the default).
-* Dot / ring colours, the hover word (default **View**), and the hover selector.
+* Dot / ring colours, the hover word (an on/off switch plus a **Default hover label**, default **View**, blank = no word), the hover selector and a **Ring blend mode**.
 * **Shape, size & transparency:** dot size, ring size, ring thickness, cursor
   opacity, and smoke opacity.
 * **Smoke physics & intensity:** colourful on/off, bloom glow + intensity,
@@ -84,12 +88,16 @@ off on touch-only devices, respects "reduced motion", and does nothing if the
 browser has no WebGL. Since 1.2.0 it also survives hostile host themes and
 optimizer plugins (see "Notes on behaviour" below).
 
-### Per-element hover text (optional)
+### Hover word (default label and per-element text)
 
-Add an attribute to any element to control the hover bubble:
+Links and buttons that match the hover selector show the **Default hover label**
+(**View** unless you change it; leave it blank for no word). Turn the whole word
+off with **Hover word** unchecked. Add an attribute to any element to control it:
 
 ```html
 <a href="/work" data-bubble-cursor-text="Open">My project</a>
+<a href="/plain" data-bubble-cursor-no-text>Enlarged ring, no word</a>
+<a href="/plain2" data-bubble-cursor-text="">Same: an empty text is an opt-out</a>
 <div data-bubble-cursor-hover>Triggers the enlarged ring</div>
 ```
 
@@ -123,7 +131,14 @@ php -S 127.0.0.1:8765
   Brizy, so it never draws over the editing surface. The
   `bubble_cursor_should_load` filter still lets you decide for other cases.
 * **Reduced motion:** if a visitor's OS requests reduced motion, nothing is drawn
-  (and the native cursor is never hidden).
+  (and the native cursor is never hidden). Since 1.3.1 this is live: turning the
+  preference on mid-visit removes the dot, ring and smoke and brings the native
+  cursor back; turning it off starts them again.
+* **One cursor only:** if another Flux cursor plugin has flagged itself
+  (`window.__fluxJellyActive`, `__superCursorActive`, `__sdcpJellyActive`,
+  `__sdcpDualActive`), Bubble Cursor draws nothing, leaves the native cursor
+  alone and logs one `console.warn`. When it starts it sets
+  `window.__bubbleCursorBooted` so a sibling can check for it.
 * **Hide native cursor:** only applied while the custom cursor is actually
   showing; ignored if both the dot and the ring are off.
 * **Optimizers (WP Rocket, LiteSpeed, Rocket Loader, Autoptimize...):** both

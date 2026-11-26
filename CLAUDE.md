@@ -2,7 +2,7 @@
 
 This file is read automatically by Claude Code at the start of a session. Read it fully, then `HANDOFF.md` / `CROSS-BROWSER-AUDIT.md` if they exist in this repo.
 
-- **Repo:** `zeerebel/bubble_cursor`  **Version:** 1.3.0  **Open draft PR:** zeerebel/bubble_cursor#7 (branch `claude/vigilant-cannon-o5rz3s`; nothing merged to `main` yet)
+- **Repo:** `zeerebel/bubble_cursor`  **Version:** 1.3.1  **Open draft PR:** zeerebel/bubble_cursor#7 (branch `claude/vigilant-cannon-o5rz3s`; nothing merged to `main` yet)
 
 ## What this is
 
@@ -15,7 +15,7 @@ A custom cursor: a dot and ring follower plus an optional WebGL fluid/smoke trai
 
 ## How to test
 
-- `./tests/run.sh` (php -l, PHP harness, node --check, Chromium suite; 74 PHP + 111 browser checks + the kit test (9 scenarios)). See `tests/README.md`.
+- `./tests/run.sh` (php -l, PHP harness, node --check, Chromium suite; 98 PHP + 160 browser checks + the kit test (9 scenarios)). See `tests/README.md`.
 
 ## Debugging
 
@@ -28,6 +28,10 @@ Since 1.3.0 the plugin carries the shared family kit: `bubble-cursor/includes/fl
 ## Current state (as of Nov 2026)
 
 Audit (12 findings) fixed in 1.2.0: visible state no longer lives only in `<html>` classes, settings via `data-bc-settings`, optimizer opt-outs, native cursor hidden only after the follower exists, bfcache restore, builder guards, once-only guard, touch-laptop support (dormant until a real mouse moves), idle smoke loop sleeps, WebGL context recovery, cache purge on save, multisite uninstall. `CROSS-BROWSER-AUDIT.md` has the findings and a 'Resolved in 1.2.0' section.
+
+## 1.3.1 (what changed)
+
+Hover word is real (`hover_text` switch + `hover_label`, default "View"; opt-outs `data-bubble-cursor-no-text` / empty `data-bubble-cursor-text`), `ring_blend` select (JS `mixBlend`), dead `textSelector` removed, live reduced motion, one-cursor stand-down (flags `__fluxJellyActive`, `__superCursorActive`, `__sdcpJellyActive`, `__sdcpDualActive`; we set `__bubbleCursorBooted`). Build the zip with `git archive --format=zip --prefix=flux-bubble-cursor/ -o flux-bubble-cursor.zip HEAD:bubble-cursor`.
 
 ## Open items and unverified claims
 

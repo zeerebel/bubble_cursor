@@ -21,9 +21,12 @@ There is no `npm install` and the suite never runs `playwright install`.
   render. Covered: desktop 1440x800, iPhone 13 / Pixel 7 / iPad gen 7 /
   iPad Pro 11 emulation, desktop with `hasTouch`, reduced motion, RTL, scroll,
   resize, className rewrites, stripped inline settings, double load,
-  synthetic `pagehide`/`pageshow`, WebGL context loss/restore, idle loop.
+  synthetic `pagehide`/`pageshow`, WebGL context loss/restore, idle loop, the default hover label
+  and its opt-outs, ring blend mode, live reduced motion (`emulateMedia` toggled mid-visit) and the
+  one-cursor stand-down flags. Known: 'hidden before first move' is intermittent in headless Chromium here (it
+  fires a trusted mousemove at 0,0 after load); it also failed in a pre-1.3.1 baseline run.
 * `tests/php-harness.php` includes `bubble-cursor.php` twice with stubbed
-  WordPress functions and exercises `sanitize()`, `should_load()` (editor query
+  WordPress functions and exercises `sanitize()` (incl. hover label, ring blend, legacy `hover_text` migration), `should_load()` (editor query
   args, Elementor/WPBakery/Customizer), the script tag filter, cache purge and
   `uninstall.php` (single site and multisite).
 

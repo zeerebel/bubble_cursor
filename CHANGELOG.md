@@ -1,5 +1,29 @@
 # Changelog
 
+## v1.3.1 - Hover label, ring blend, live reduced motion, one-cursor stand-down
+
+- **"View" is real.** New `hover_label` option (settings page: "Default hover label", default
+  "View", sanitised, max 40 characters, blank = no word) and `hover_text` is now the on/off switch
+  ("Hover word"). Links and buttons that match the hover selector show the label when they have no
+  own text. Per-element `data-bubble-cursor-text` still wins; `data-bubble-cursor-no-text` (or an
+  empty `data-bubble-cursor-text`) opts an element out. JS settings: `hoverText` (bool) and
+  `hoverLabel`; an older settings object where `hoverText` is the word itself still works.
+  Pre-1.3.1 saved options are migrated on read (the old word becomes the label).
+- **Ring blend mode.** New `ring_blend` option (whitelist: normal, screen, lighten, overlay,
+  difference, exclusion, color-dodge, hard-light, soft-light) sent as `mixBlend`.
+- **Dead code removed.** The unused `textSelector` read is gone.
+- **Reduced motion is live.** The `prefers-reduced-motion` change event now removes the dot, ring
+  and smoke (stopping their loops) and restores the native cursor, and rebuilds them when it turns
+  off. The CSS rule that hides the native cursor now sits inside
+  `@media (prefers-reduced-motion: no-preference)`.
+- **One cursor only.** At boot (and again when a dormant touch-laptop wakes) the script checks
+  `window.__fluxJellyActive`, `__superCursorActive`, `__sdcpJellyActive`, `__sdcpDualActive`; if
+  any is truthy it mounts nothing, does not hide the native cursor and logs one `console.warn`.
+  `window.__bubbleCursorBooted` is still set when it starts, for siblings to check.
+- **Docs.** README install now gives the exact `git archive --prefix=flux-bubble-cursor/` command.
+- Tests: PHP harness and Chromium suite extended (see `tests/README.md`). Chromium only; Firefox,
+  Safari and Safari WebGL2 not run.
+
 ## v1.3.0 - Flux Family Kit
 
 Joins the Flux family. Admin only; the front end is unchanged.

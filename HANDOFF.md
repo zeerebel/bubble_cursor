@@ -3,7 +3,7 @@
 <!-- handoff:start -->
 ## START HERE: current status and how to resume (updated Nov 22, 2026)
 
-**Bubble Cursor**, version **1.3.0**, repo `zeerebel/bubble_cursor`, open draft PR `zeerebel/bubble_cursor#7` on branch `claude/vigilant-cannon-o5rz3s` (not merged to `main`). If you were told to "read the handoff", read this block, then `CLAUDE.md` (shared rules and the Flux-suite hardening checklist), then `CROSS-BROWSER-AUDIT.md` if present, then the rest of this file.
+**Bubble Cursor**, version **1.3.1**, repo `zeerebel/bubble_cursor`, open draft PR `zeerebel/bubble_cursor#7` on branch `claude/vigilant-cannon-o5rz3s` (not merged to `main`). If you were told to "read the handoff", read this block, then `CLAUDE.md` (shared rules and the Flux-suite hardening checklist), then `CROSS-BROWSER-AUDIT.md` if present, then the rest of this file.
 
 <!-- family:start -->
 ### Family context (siblings)
@@ -30,10 +30,17 @@ Shared kit in `bubble-cursor/includes/flux-family/` (`loader.php`, `core.php`, k
 - Owner's debugging guide (failure modes, console checks, file map, discrepancies): `DEBUGGING.md` at the repo root (not in the plugin zip).
 
 ### How to test
-- `./tests/run.sh` (php -l, PHP harness, node --check, Chromium suite; 74 PHP + 111 browser checks + the kit test (9 scenarios)). See `tests/README.md`.
+- `./tests/run.sh` (php -l, PHP harness, node --check, Chromium suite; 98 PHP + 160 browser checks + the kit test (9 scenarios); the browser check 'hidden before first move' is timing-dependent in headless Chromium (it fires a trusted mousemove at (0,0) after load): it failed in the baseline run and in one 1.3.1 run, passed in the final run). See `tests/README.md`.
 
 ### Status
 Audit (12 findings) fixed in 1.2.0: visible state no longer lives only in `<html>` classes, settings via `data-bc-settings`, optimizer opt-outs, native cursor hidden only after the follower exists, bfcache restore, builder guards, once-only guard, touch-laptop support (dormant until a real mouse moves), idle smoke loop sleeps, WebGL context recovery, cache purge on save, multisite uninstall. `CROSS-BROWSER-AUDIT.md` has the findings and a 'Resolved in 1.2.0' section.
+
+### 1.3.1 changes
+- Hover word: `hover_text` (on/off) + `hover_label` (default "View"); JS keys `hoverText`, `hoverLabel`. Opt-outs: `data-bubble-cursor-no-text`, empty `data-bubble-cursor-text`.
+- `ring_blend` option -> `mixBlend`; `textSelector` removed.
+- Live reduced motion (`applyMotionPref()` on the media query change; follower and smoke unmounted/remounted; hide-native CSS inside `@media (prefers-reduced-motion: no-preference)`).
+- One-cursor stand-down: flags `__fluxJellyActive`, `__superCursorActive`, `__sdcpJellyActive`, `__sdcpDualActive`; we publish `__bubbleCursorBooted`.
+- `FAMILY.md` still says this repo has no LICENSE; it has had one since 1.3.0. FAMILY.md is generated from the hub, so fix it there (not edited here).
 
 ### Open items and unverified claims
 - The WebGL2 half-float linear-filtering change is unverified on Safari/iOS hardware.
