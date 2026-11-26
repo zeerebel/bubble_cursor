@@ -83,6 +83,7 @@ Not in the family:
 - A change here can matter to a sibling: if you touch scrolling, z-index, cursor hiding, admin menus or the shared kit, read the sibling rows above and say in your report which ones you checked.
 - **The shared kit** (`includes/flux-family/` in each plugin, except `super-duper-cursor`) is the same two files everywhere. Do not edit your copy alone: change one copy, run `php tests/test-family-kit.php`, copy the two files and the test to every sibling, bump the kit version in `core.php`, and re-run each sibling's suite. The family docs are regenerated from one script (`tools/refresh-family-docs.py` in the `flux-family-hub` folder if present, otherwise ask the owner).
 - Names: the final names in the table are the target; until a repo is renamed on GitHub, the repo name above is the live one.
+- **Starting a new thread?** The master index of every Flux repo (links, versions, branches, how to attach them all, open decisions and the install-ready zip for each plugin) is `FLUX-FAMILY-HANDOFF.md` in `zeerebel/flux-core`. Each repo also carries its own installable zip in `downloads/`.
 
 ### Rules that apply across the family
 
