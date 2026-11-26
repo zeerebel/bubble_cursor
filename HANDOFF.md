@@ -26,6 +26,9 @@ Shared kit in `bubble-cursor/includes/flux-family/` (`loader.php`, `core.php`, k
 - `bubble-cursor/bubble-cursor.php`, `assets/js/bubble-cursor.js`, `assets/js/fluid-cursor.js`, `assets/css/bubble-cursor.css`; filter `bubble_cursor_should_load`; constant `BUBBLE_CURSOR_VERSION`.
 - **Do not modify** `Exposure.html`, the `demo/` images or the screenshot jpeg (owner reference material).
 
+### Debugging
+- Owner's debugging guide (failure modes, console checks, file map, discrepancies): `DEBUGGING.md` at the repo root (not in the plugin zip).
+
 ### How to test
 - `./tests/run.sh` (php -l, PHP harness, node --check, Chromium suite; 74 PHP + 111 browser checks + the kit test (9 scenarios)). See `tests/README.md`.
 
